@@ -1,0 +1,9 @@
+.DS_Store
+.AppleDouble
+*.swp
+
+# Generated release artifacts.
+/dist/
+
+# Python bytecode from running scripts/tests locally.
+__pycache__/

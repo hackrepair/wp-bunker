@@ -161,6 +161,9 @@ $forged                     = array( THRG_Bunker_Hatch::ACCESS_COOKIE => ( (int)
 check( 'a longer expiry cannot be forged', 'wp_die' === kind( hit( array(), null, $forged ) ) );
 check( 'garbage in the cookie is refused', 'wp_die' === kind( hit( array(), null, array( THRG_Bunker_Hatch::ACCESS_COOKIE => 'x' ) ) ) );
 $sign    = new ReflectionMethod( 'THRG_Bunker_Hatch', 'sign' );
+if ( PHP_VERSION_ID < 80100 ) {
+    $sign->setAccessible( true );
+}
 $past    = time() - 10;
 $expired = array( THRG_Bunker_Hatch::ACCESS_COOKIE => $past . '|1|' . $sign->invoke( null, $past, 1 ) );
 check( 'an expired cookie is refused even with a valid signature', 'wp_die' === kind( hit( array(), null, $expired ) ) );

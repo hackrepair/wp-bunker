@@ -104,6 +104,9 @@ $GLOBALS['http'] = 200;
 
 // Review check (private row, read through reflection because the other rows need a full WordPress).
 $method = new ReflectionMethod( 'THRG_Bunker_Checks', 'stealth' );
+if ( PHP_VERSION_ID < 80100 ) {
+    $method->setAccessible( true );
+}
 THRG_Bunker_Options::set( 'stealth', false );
 $row = $method->invoke( null );
 check( 'the review checks mention it, informational while off', 'stealth' === $row['id'] && 'info' === $row['status'] );

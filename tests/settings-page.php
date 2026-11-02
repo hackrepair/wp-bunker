@@ -83,3 +83,21 @@ foreach ( array_unique( $found[1] ) as $class ) {
     }
 }
 check( 'the stylesheet has no rules for classes nothing uses' . ( $dead ? ' (' . implode( ', ', $dead ) . ')' : '' ), array() === $dead );
+
+// Saved text is data: HTML and script markers in every free-text setting must render inert.
+$marker = '"><script>alert(1)</script><img src=x onerror=alert(2)>';
+THRG_Bunker_Options::update( array( 'confirmed' => 1, 'rest_allow' => '/a' . $marker, 'actions_allow' => 'a' . $marker, 'ip_list' => '203.0.113.9' . "\n" . $marker, 'hatch_email' => 'x' . $marker ) );
+$html = render_page();
+check( 'saved markers never appear as live script or event-handler markup', false === strpos( $html, '<script>alert' ) && false === strpos( $html, '<img src=x' ) && false === strpos( $html, '"><script' ) );
+check( 'the settings page still renders with hostile saved values', false !== strpos( $html, 'class="wrap thrg-bunker"' ) );
+
+// The backup section is for problems only: hidden normally, shown with a button when Bunker holds a backup.
+THRG_Bunker_Options::update( array( 'confirmed' => 1 ) );
+$backup_file = THRG_Bunker_Server_Rules::backup_path( ABSPATH . '.htaccess' );
+@unlink( $backup_file );
+$html = render_page();
+check( 'with no retained backup the page has no recovery section and shows no server paths', false === strpos( $html, 'bunker-recovery' ) && false === strpos( $html, 'Managed block' ) && false === strpos( $html, ABSPATH . '.htaccess' ) );
+file_put_contents( $backup_file, 'old rules' );
+$html = render_page();
+check( 'with a retained backup the section and the button appear in plain words', false !== strpos( $html, 'bunker-recovery' ) && false !== strpos( $html, 'Set the backup aside and allow a retry' ) && false !== strpos( $html, 'thrg_bunker_archive_backup' ) );
+@unlink( $backup_file );

@@ -47,3 +47,20 @@ foreach ( THRG_Bunker_Ip::cloudflare_ranges() as $range ) {
     $ranges_ok = $ranges_ok && THRG_Bunker_Ip::valid_entry( $range );
 }
 check( 'every built-in Cloudflare range is valid', $ranges_ok );
+
+// IPv4-mapped IPv6 (what a dual-stack server reports for an IPv4 visitor) matches plain IPv4 entries and ranges.
+check( 'a mapped address matches the same plain IPv4 entry', THRG_Bunker_Ip::matches( '::ffff:203.0.113.5', '203.0.113.5' ) );
+check( 'a mapped address matches an IPv4 range', THRG_Bunker_Ip::matches( '::ffff:203.0.113.5', '203.0.113.0/24' ) );
+check( 'a mapped address outside the range does not match', ! THRG_Bunker_Ip::matches( '::ffff:203.0.114.5', '203.0.113.0/24' ) );
+check( 'a plain IPv4 visitor matches a mapped entry', THRG_Bunker_Ip::matches( '203.0.113.5', '::ffff:203.0.113.5' ) );
+check( 'a different IPv4 address does not match a mapped entry', ! THRG_Bunker_Ip::matches( '203.0.113.6', '::ffff:203.0.113.5' ) );
+check( 'a mapped address does not match an unrelated IPv6 entry', ! THRG_Bunker_Ip::matches( '::ffff:203.0.113.5', '2001:db8::/32' ) );
+check( 'an ordinary IPv6 address still matches its own range', THRG_Bunker_Ip::matches( '2001:db8::1', '2001:db8::/32' ) );
+check( 'the all-addresses IPv4 range does not swallow IPv6 visitors', ! THRG_Bunker_Ip::matches( '2001:db8::1', '0.0.0.0/0' ) );
+check( 'zone ids and padded addresses are not valid entries', ! THRG_Bunker_Ip::valid_entry( 'fe80::1%eth0' ) && ! THRG_Bunker_Ip::valid_entry( '203.000.113.005' ) && ! THRG_Bunker_Ip::valid_entry( '203.0.113.5/33' ) && ! THRG_Bunker_Ip::valid_entry( '203.0.113.5/-1' ) && ! THRG_Bunker_Ip::valid_entry( '203.0.113.5/24/8' ) );
+$cfm = THRG_Bunker_Ip::detect( 'cloudflare', array( 'REMOTE_ADDR' => '::ffff:104.16.1.1', 'HTTP_CF_CONNECTING_IP' => '198.51.100.9' ) );
+check( 'Cloudflare behind a dual-stack socket is still recognised as a trusted proxy', '198.51.100.9' === $cfm['ip'] );
+$spoofm = THRG_Bunker_Ip::detect( 'cloudflare', array( 'REMOTE_ADDR' => '::ffff:203.0.113.5', 'HTTP_CF_CONNECTING_IP' => '198.51.100.9' ) );
+check( 'a mapped non-Cloudflare address cannot spoof the header', '::ffff:203.0.113.5' === $spoofm['ip'] );
+$ff = THRG_Bunker_Ip::detect( 'cloudflare', array( 'REMOTE_ADDR' => '203.0.113.5', 'HTTP_X_FORWARDED_FOR' => '104.16.1.1', 'HTTP_X_REAL_IP' => '104.16.1.1', 'HTTP_CLIENT_IP' => '104.16.1.1' ) );
+check( 'other forwarding headers are never believed', '203.0.113.5' === $ff['ip'] );

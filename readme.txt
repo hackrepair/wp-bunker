@@ -4,7 +4,7 @@ Tags: security, hardening, headless, static site, lockdown
 Requires at least: 6.9.4
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 1.2.4
+Stable tag: 1.2.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Support link: https://github.com/hackrepair/wp-bunker/discussions
@@ -15,7 +15,7 @@ WordPress Utility Lockdown. Your static website faces the public; WordPress stay
 
 If your public website is static HTML (often built and updated by AI) and WordPress only sits behind it for contact forms, mailing-list sign-ups, a chat backend or a database, most of WordPress is unused, yet bots still probe all of it. Bunker switches off everything a utility install does not need, and keeps the few doors your static site actually uses.
 
-Development build 1.2.4 is unreleased.
+Development build 1.2.7 is unreleased.
 
 Open **Settings > Bunker**. Most lockdowns are on by default, each with a plain-language description. Untick one and the description flips to tell you what just happened. Each checkbox saves the moment you change it.
 
@@ -48,7 +48,7 @@ Open **Settings > Bunker**. Most lockdowns are on by default, each with a plain-
 
 **Your own 404 page.** Everything Bunker refuses gets a real 404. If your site folder has a `404.html`, Bunker uses it; otherwise a built-in page appears.
 
-**Server rule recovery.** Administrator-only metadata shows managed blocks, retained backups and directory writability. Preserve a retained backup under a unique saved name before retrying a rule update. The archive action keeps the live rules unchanged and requires a completed health check.
+**Server rules backup.** When Bunker is holding a backup of a rules file because a health check was inconclusive, Settings shows a short notice with a button to set the backup aside under a unique saved name before retrying. Nothing is shown when there is no backup. The archive action keeps the live rules unchanged and requires a completed health check.
 
 **Review checks.** Below the options, Bunker shows read-only checks: an account named admin, unused plugins and themes, debug mode, an error_log file in the web folder, and whether WordPress shares a directory with your static site's index.html. It never changes any of these for you.
 
@@ -113,6 +113,25 @@ Those use XML-RPC. Untick **Block XML-RPC** if you use either.
 PHP lockdowns work everywhere. Bunker shows manual equivalents for its file restrictions. Configure HTTPS redirects through your Nginx hosting controls.
 
 == Changelog ==
+
+= 1.2.7 =
+* Show the server rules backup section on the settings page only when Bunker is actually holding a backup, in plain words, instead of always listing server paths and statuses.
+
+= 1.2.6 =
+* With "Answer 404 to everything WordPress-related" on, a refused REST request (including through /index.php/wp-json/) now gets the 404 page instead of a JSON refusal that identified WordPress.
+* The known-actions lockdown now runs early enough to cover a bare admin-ajax.php request, which used to answer with WordPress's own "0".
+* With the IP lock on, the database repair screen (/wp-admin/maint/repair.php), which WordPress otherwise shows to anyone, is limited to approved IP addresses.
+* The 404 rules also cover /wp-admin/setup-config.php, /wp-admin/includes/*.php and /wp-includes/*.php.
+* Add tests for the REST refusal, the early actions gate, the repair screen and the new 404 rules.
+
+= 1.2.5 =
+* Leave a symbolic-link rules file alone instead of replacing it, and check rule markers before taking a backup so a refusal never blocks the next attempt.
+* Refuse cleanly, without PHP warnings or stray temporary files, when the rules folder is read-only.
+* Remove the rule transaction lock files when Bunker is deactivated or deleted, unless another request is holding one.
+* Treat IPv4 visitors reported as IPv4-mapped IPv6 addresses (::ffff:a.b.c.d) as the same IPv4 address for the IP list and Cloudflare detection.
+* Accept hatch link and review secrets only when they are entirely hexadecimal; a link with extra characters is refused instead of being cleaned up.
+* Tell a visitor how many minutes remain on an earlier pending hatch request, and mention the new-link option.
+* Add tests for public action matching, REST routes, escaping of saved text, rule files on a real filesystem, IPv4-mapped addresses and hatch replay.
 
 = 1.2.4 =
 * Add administrator recovery metadata and a nonce-protected action to preserve retained rule backups under unique saved names before retrying.

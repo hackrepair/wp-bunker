@@ -95,8 +95,15 @@ final class THRG_Bunker_Ip {
             list( $net, $bits ) = explode( '/', $entry, 2 );
             $bits               = (int) $bits;
         }
-        $packed_ip  = inet_pton( $ip );
+        $packed_ip  = self::unmap( inet_pton( $ip ) );
         $packed_net = inet_pton( $net );
+        if ( false !== $packed_net && 16 === strlen( $packed_net ) && 4 === strlen( self::unmap( $packed_net ) ) ) {
+            // An IPv4-mapped IPv6 entry such as ::ffff:203.0.113.5 means the IPv4 address.
+            $packed_net = self::unmap( $packed_net );
+            if ( null !== $bits ) {
+                $bits = max( 0, $bits - 96 );
+            }
+        }
         if ( false === $packed_ip || false === $packed_net || strlen( $packed_ip ) !== strlen( $packed_net ) ) {
             return false;
         }
@@ -113,6 +120,21 @@ final class THRG_Bunker_Ip {
         }
         $mask = ( 0xFF << ( 8 - $rest ) ) & 0xFF;
         return ( ord( $packed_ip[ $bytes ] ) & $mask ) === ( ord( $packed_net[ $bytes ] ) & $mask );
+    }
+
+    /**
+     * Turn a packed IPv4-mapped IPv6 address (::ffff:a.b.c.d) into the 4-byte IPv4 form; anything else is returned as given.
+     *
+     * Dual-stack servers report IPv4 visitors this way, and the owner's list holds plain IPv4 addresses.
+     *
+     * @param string|false $packed Result of inet_pton().
+     * @return string|false
+     */
+    private static function unmap( $packed ) {
+        if ( is_string( $packed ) && 16 === strlen( $packed ) && str_repeat( "\0", 10 ) . "\xff\xff" === substr( $packed, 0, 12 ) ) {
+            return substr( $packed, 12 );
+        }
+        return $packed;
     }
 
     /**

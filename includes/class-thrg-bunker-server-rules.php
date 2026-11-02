@@ -81,7 +81,9 @@ final class THRG_Bunker_Server_Rules {
             '<IfModule mod_alias.c>',
             '    RedirectMatch 404 (?i)/(readme\.html|license\.txt|wp-config-sample\.php|error_log|debug\.log|php_errorlog)$',
             '    RedirectMatch 404 (?i)/(wp-load|wp-blog-header|wp-settings|wp-trackback|wp-links-opml|wp-signup|wp-activate|wp-mail|wp-comments-post)\.php$',
-            '    RedirectMatch 404 (?i)/wp-admin/install\.php$',
+            '    RedirectMatch 404 (?i)/wp-admin/(install|setup-config)\.php$',
+            '    RedirectMatch 404 (?i)/wp-admin/includes/[^/]+\.php$',
+            '    RedirectMatch 404 (?i)/wp-includes/[^/]+\.php$',
             '    RedirectMatch 404 (?i)/wp-(content|includes)/?$',
             '    RedirectMatch 404 (?i)/wp-content/(index\.php|(plugins|mu-plugins|themes|uploads|upgrade)/?(index\.php)?)$',
             '    RedirectMatch 404 (?i)/wp-content/(plugins|mu-plugins|themes)/[^/]+/?(index\.php)?$',
@@ -99,7 +101,7 @@ final class THRG_Bunker_Server_Rules {
      */
     public static function nginx_text( $id ) {
         if ( 'version_files' === $id && THRG_Bunker_Options::active( 'stealth' ) ) {
-            return "location ~* /(readme\\.html|license\\.txt|wp-config-sample\\.php|error_log|debug\\.log|php_errorlog|wp-load\\.php|wp-blog-header\\.php|wp-settings\\.php|wp-trackback\\.php|wp-links-opml\\.php|wp-signup\\.php|wp-activate\\.php|wp-mail\\.php|wp-comments-post\\.php)\$ {\n    return 404;\n}\nlocation ~* /wp-admin/install\\.php\$ {\n    return 404;\n}\nlocation ~* /wp-content/(plugins|mu-plugins|themes)/.+/(readme|changelog|changes|license|licence|upgrade)[^/]*\\.(txt|md|html)\$ {\n    return 404;\n}\nlocation ~* ^/wp-(content|includes)/?\$ {\n    return 404;\n}\nautoindex off;";
+            return "location ~* /(readme\\.html|license\\.txt|wp-config-sample\\.php|error_log|debug\\.log|php_errorlog|wp-load\\.php|wp-blog-header\\.php|wp-settings\\.php|wp-trackback\\.php|wp-links-opml\\.php|wp-signup\\.php|wp-activate\\.php|wp-mail\\.php|wp-comments-post\\.php)\$ {\n    return 404;\n}\nlocation ~* /wp-admin/(install|setup-config)\\.php\$ {\n    return 404;\n}\nlocation ~* /wp-admin/includes/[^/]+\\.php\$ {\n    return 404;\n}\nlocation ~* /wp-includes/[^/]+\\.php\$ {\n    return 404;\n}\nlocation ~* /wp-content/(plugins|mu-plugins|themes)/.+/(readme|changelog|changes|license|licence|upgrade)[^/]*\\.(txt|md|html)\$ {\n    return 404;\n}\nlocation ~* ^/wp-(content|includes)/?\$ {\n    return 404;\n}\nautoindex off;";
         }
         if ( 'version_files' === $id ) {
             return "location ~* ^/(readme\\.html|license\\.txt|wp-config-sample\\.php|error_log|debug\\.log|php_errorlog)\$ {\n    deny all;\n}\nautoindex off;";
@@ -226,7 +228,7 @@ final class THRG_Bunker_Server_Rules {
     public static function write_atomic( $path, $contents ) {
         $dir = dirname( $path );
         // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- Checking a local file's permissions before an atomic write; WP_Filesystem cannot rename over a file atomically.
-        if ( ! is_dir( $dir ) || ( file_exists( $path ) && ! is_writable( $path ) ) || ( ! file_exists( $path ) && ! is_writable( $dir ) ) ) {
+        if ( ! is_dir( $dir ) || ! is_writable( $dir ) || ( file_exists( $path ) && ! is_writable( $path ) ) ) {
             return false;
         }
         $perms = file_exists( $path ) ? ( fileperms( $path ) & 0777 ) : 0644;
@@ -332,7 +334,7 @@ final class THRG_Bunker_Server_Rules {
 			);
         }
         // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
-        $lock = fopen( $path . '.thrg-bunker-lock', 'c' );
+        $lock = is_writable( dirname( $path ) ) ? fopen( $path . '.thrg-bunker-lock', 'c' ) : false;
         if ( false === $lock ) {
             return array(
 				'ok'      => false,
@@ -365,6 +367,12 @@ final class THRG_Bunker_Server_Rules {
                 'message' => '',
             );
         }
+        if ( is_link( $path ) ) {
+            return array(
+                'ok'      => false,
+                'message' => __( 'The server rules file is a symbolic link, so Bunker left it alone. Replace it with a regular file or add the rules by hand.', 'thrg-bunker' ),
+            );
+        }
         $old     = '';
         $existed = file_exists( $path );
         if ( file_exists( $path ) ) {
@@ -374,6 +382,13 @@ final class THRG_Bunker_Server_Rules {
                 return array(
                     'ok'      => false,
                     'message' => __( 'Bunker could not read the server rules file, so nothing was changed.', 'thrg-bunker' ),
+                );
+            }
+            // Check the markers first, so a refusal never leaves a backup that blocks the next attempt.
+            if ( ! self::valid_markers( $old ) ) {
+                return array(
+                    'ok'      => false,
+                    'message' => __( 'Bunker found incomplete or ambiguous rule markers. Review the file before retrying.', 'thrg-bunker' ),
                 );
             }
             // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Local backup of the file about to change.
@@ -440,7 +455,7 @@ final class THRG_Bunker_Server_Rules {
             return false;
         }
         // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
-        $lock = fopen( $path . '.thrg-bunker-lock', 'c' );
+        $lock = is_writable( dirname( $path ) ) ? fopen( $path . '.thrg-bunker-lock', 'c' ) : false;
         if ( false === $lock ) {
             return false;
         }
@@ -474,7 +489,7 @@ final class THRG_Bunker_Server_Rules {
         if ( false === $old || false === strpos( $old, self::BEGIN ) ) {
             return true;
         }
-        if ( ! self::valid_markers( $old ) || ! self::write_atomic( $path, self::strip( $old ) ) ) {
+        if ( is_link( $path ) || ! self::valid_markers( $old ) || ! self::write_atomic( $path, self::strip( $old ) ) ) {
             return false;
         }
         self::drop_backup( $path );
@@ -488,8 +503,37 @@ final class THRG_Bunker_Server_Rules {
      */
     public static function remove_all() {
         foreach ( self::ids() as $id ) {
-            self::remove( $id );
+            if ( self::remove( $id ) ) {
+                self::drop_lock_file( self::target( $id ) );
+            }
         }
+    }
+
+    /**
+     * Delete the transaction lock file once Bunker no longer manages the rules file.
+     *
+     * Only done on removal (deactivation or uninstall), never during an apply, and only when no other
+     * request holds the lock and no Bunker block remains.
+     *
+     * @param string $path Rules file path.
+     * @return void
+     */
+    private static function drop_lock_file( $path ) {
+        $lock_path = $path . '.thrg-bunker-lock';
+        if ( '' === $path || ! is_file( $lock_path ) || is_link( $lock_path ) || self::present( $path ) ) {
+            return;
+        }
+        // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+        $lock = fopen( $lock_path, 'c' );
+        if ( false === $lock ) {
+            return;
+        }
+        if ( flock( $lock, LOCK_EX | LOCK_NB ) ) {
+            unlink( $lock_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Removing Bunker's own lock file.
+            flock( $lock, LOCK_UN );
+        }
+        // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+        fclose( $lock );
     }
 
     /**

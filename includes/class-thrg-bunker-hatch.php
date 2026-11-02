@@ -291,8 +291,19 @@ final class THRG_Bunker_Hatch {
             self::page( __( 'Please try again', 'thrg-bunker' ), '<p>' . esc_html__( 'An approval request is being processed.', 'thrg-bunker' ) . '</p>' );
         }
         try {
-            if ( self::stored_request() ) {
-                self::page( __( 'Approval pending', 'thrg-bunker' ), '<p>' . esc_html__( 'An earlier browser request is still active. Complete it or wait for it to expire.', 'thrg-bunker' ) . '</p>' );
+            $active = self::stored_request();
+            if ( $active ) {
+                $minutes = max( 1, (int) ceil( ( (int) $active['expires'] - time() ) / MINUTE_IN_SECONDS ) );
+                self::page(
+                    __( 'Approval pending', 'thrg-bunker' ),
+                    '<p>' . esc_html(
+                        sprintf(
+                            /* translators: %d: minutes until the earlier request expires. */
+                            _n( 'An earlier browser request is still active. Complete it, or try again in about %d minute when it expires. The administrator can also make a new link from Settings > Bunker.', 'An earlier browser request is still active. Complete it, or try again in about %d minutes when it expires. The administrator can also make a new link from Settings > Bunker.', $minutes, 'thrg-bunker' ),
+                            $minutes
+                        )
+                    ) . '</p>'
+                );
             }
 
             $log = self::recent_log();
@@ -659,13 +670,14 @@ final class THRG_Bunker_Hatch {
     }
 
     /**
-     * Keep only hexadecimal characters, and only up to a sane length.
+     * Accept a value only if it is entirely hexadecimal and of a sane length; anything else is treated as empty.
      *
      * @param string $value Raw value.
      * @return string
      */
     private static function clean_hex( $value ) {
-        return substr( (string) preg_replace( '/[^a-f0-9]/', '', strtolower( (string) $value ) ), 0, 128 );
+        $value = strtolower( trim( (string) $value ) );
+        return 1 === preg_match( '/^[a-f0-9]{1,128}$/D', $value ) ? $value : '';
     }
 
     /**

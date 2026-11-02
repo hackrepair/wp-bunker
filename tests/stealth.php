@@ -46,9 +46,24 @@ check( 'the early gate is hooked to init when item 14 and the IP lock are on', i
 $GLOBALS['hooks'] = array();
 THRG_Bunker_Options::set( 'stealth', false );
 THRG_Bunker_Lockdown::boot();
-check( 'and is not hooked when item 14 is off', ! isset( $GLOBALS['hooks']['init'] ) || ! in_array( array( 'THRG_Bunker_Lockdown', 'early_gate' ), $GLOBALS['hooks']['init'], true ) );
+check( 'with item 14 off it is still hooked, for the database repair screen', isset( $GLOBALS['hooks']['init'] ) && in_array( array( 'THRG_Bunker_Lockdown', 'early_gate' ), $GLOBALS['hooks']['init'], true ) );
+$GLOBALS['pagenow'] = 'wp-login.php';
+check( 'with item 14 off the early gate leaves the login page to the normal gate', null === thrg_catch( array( 'THRG_Bunker_Lockdown', 'early_gate' ) ) );
+foreach ( array( 'repair.php' ) as $screen ) {
+    $GLOBALS['pagenow'] = $screen;
+    $e = thrg_catch( array( 'THRG_Bunker_Lockdown', 'early_gate' ) );
+    check( "a refused visitor cannot open $screen even with item 14 off", $e && 'wp_die' === $e->getMessage() );
+    $_SERVER['REMOTE_ADDR'] = '203.0.113.5';
+    check( "an allowed IP can open $screen", null === thrg_catch( array( 'THRG_Bunker_Lockdown', 'early_gate' ) ) );
+    $_SERVER['REMOTE_ADDR'] = '198.51.100.9';
+    THRG_Bunker_Options::set( 'stealth', true );
+    $e = thrg_catch( array( 'THRG_Bunker_Lockdown', 'early_gate' ) );
+    check( "with item 14 on a refused visitor gets the 404 on $screen", $e && 'notfound' === $e->getMessage() );
+    THRG_Bunker_Options::set( 'stealth', false );
+}
 THRG_Bunker_Options::set( 'stealth', true );
 
+$GLOBALS['pagenow'] = 'wp-login.php';
 // Hatch still works with the earlier, quieter gate.
 list( , $token ) = array( null, '' );
 $GLOBALS['can'] = true;
@@ -67,7 +82,7 @@ $_GET = array();
 $stealth_lines = THRG_Bunker_Server_Rules::lines( 'version_files' );
 $text          = implode( "\n", $stealth_lines );
 check( 'with item 14 on, the root block answers 404 with no 403 rule', false !== strpos( $text, 'RedirectMatch 404' ) && false === strpos( $text, 'Require all denied' ) && false !== strpos( $text, 'Options -Indexes' ) );
-foreach ( array( 'wp-load', 'wp-trackback', 'wp-links-opml', 'wp-signup', 'readme', 'license', 'wp-config-sample', 'plugins|mu-plugins|themes', 'wp-admin/install' ) as $needle ) {
+foreach ( array( 'wp-load', 'wp-trackback', 'wp-links-opml', 'wp-signup', 'readme', 'license', 'wp-config-sample', 'plugins|mu-plugins|themes', 'wp-admin/(install|setup-config)', 'wp-admin/includes', 'wp-includes/[^/]+' ) as $needle ) {
     check( "the 404 rules cover $needle", false !== strpos( $text, $needle ) );
 }
 check( 'static files that WordPress screens need are not blocked', false === strpos( $text, 'wp-includes/js' ) && false === strpos( $text, 'wp-includes/css' ) && false === strpos( $text, 'wp-admin/css' ) );
@@ -137,3 +152,22 @@ check( 'with item 14 off they still answer 403', $e && 'wp_die' === $e->getMessa
 $e = thrg_catch( array( 'THRG_Bunker_Lockdown', 'refuse_comment' ) );
 check( 'and a refused comment answers 403', $e && 'wp_die' === $e->getMessage() && 403 === $e->status );
 unset( $_REQUEST['action'] );
+
+// A scanner must not learn WordPress is here from the REST refusal, the bare admin-ajax answer or core PHP files.
+THRG_Bunker_Options::update( array( 'confirmed' => 1, 'rest' => 1, 'rest_allow' => '/chat/v1' ) );
+THRG_Bunker_Options::set( 'stealth', true );
+$GLOBALS['user'] = 0;
+$GLOBALS['wp']   = (object) array( 'query_vars' => array( 'rest_route' => '/' ) );
+$e = thrg_catch( function () { THRG_Bunker_Lockdown::rest_gate( null ); } );
+check( 'with item 14 on, a refused REST request gets the 404, not a JSON 401', $e && 'notfound' === $e->getMessage() );
+$GLOBALS['wp']->query_vars['rest_route'] = '/chat/v1/send';
+check( 'an allowed route still works with item 14 on', null === THRG_Bunker_Lockdown::rest_gate( null ) );
+THRG_Bunker_Options::set( 'stealth', false );
+$GLOBALS['wp']->query_vars['rest_route'] = '/';
+$out = THRG_Bunker_Lockdown::rest_gate( null );
+check( 'with item 14 off, a refused REST request keeps the normal 401', $out instanceof WP_Error && 401 === $out->data['status'] );
+THRG_Bunker_Options::set( 'stealth', true );
+$GLOBALS['hooks'] = array();
+THRG_Bunker_Options::set( 'known_actions', true );
+THRG_Bunker_Lockdown::boot();
+check( 'the known-actions gate runs on init, before admin-ajax.php answers a bare request with its own 0', in_array( array( 'THRG_Bunker_Lockdown', 'known_actions_gate' ), $GLOBALS['hooks']['init'], true ) && ! in_array( array( 'THRG_Bunker_Lockdown', 'known_actions_gate' ), isset( $GLOBALS['hooks']['admin_init'] ) ? $GLOBALS['hooks']['admin_init'] : array(), true ) );

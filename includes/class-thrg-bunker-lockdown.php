@@ -62,17 +62,18 @@ final class THRG_Bunker_Lockdown {
         if ( THRG_Bunker_Options::active( 'ip_lock' ) ) {
             add_action( 'login_init', array( __CLASS__, 'ip_gate' ), 0 );
             add_action( 'admin_init', array( __CLASS__, 'ip_gate' ), 0 );
-            if ( THRG_Bunker_Options::active( 'stealth' ) ) {
-                // Earlier than WordPress's own redirect from /wp-admin/ to the login page.
-                add_action( 'init', array( __CLASS__, 'early_gate' ), 0 );
-            }
+            // Earlier than WordPress's own redirect from /wp-admin/ to the login page, and it also covers the
+            // database repair screen, which WordPress shows to anyone and which does not run admin_init.
+            // (upgrade.php cannot be covered here: WordPress loads no plugins while it runs.)
+            add_action( 'init', array( __CLASS__, 'early_gate' ), 0 );
         }
         if ( THRG_Bunker_Options::active( 'file_editor' ) && ! defined( 'DISALLOW_FILE_EDIT' ) ) {
             // DISALLOW_FILE_MODS is deliberately not offered: it also stops plugin and core updates.
             define( 'DISALLOW_FILE_EDIT', true ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- DISALLOW_FILE_EDIT is WordPress core's own constant.
         }
         if ( THRG_Bunker_Options::active( 'known_actions' ) ) {
-            add_action( 'admin_init', array( __CLASS__, 'known_actions_gate' ), 0 );
+            // On init, not admin_init: admin-ajax.php answers a missing or odd action with its own "0" before admin_init runs.
+            add_action( 'init', array( __CLASS__, 'known_actions_gate' ), 0 );
         }
     }
 
@@ -152,6 +153,10 @@ final class THRG_Bunker_Lockdown {
         $state = THRG_Bunker_Options::state();
         if ( self::route_allowed( $route, $state['rest_allow'] ) ) {
             return $result;
+        }
+        if ( THRG_Bunker_Options::active( 'stealth' ) ) {
+            // A JSON refusal (and the headers that come with it) would show that WordPress answers here.
+            THRG_Bunker_NotFound::send();
         }
         return new WP_Error(
             'rest_forbidden',
@@ -310,7 +315,15 @@ final class THRG_Bunker_Lockdown {
      * @return void
      */
     public static function early_gate() {
-        if ( 'wp-login.php' !== self::current_script() && ! ( defined( 'WP_ADMIN' ) && WP_ADMIN ) ) {
+        $script = self::current_script();
+        if ( in_array( $script, array( 'repair.php' ), true ) ) {
+            self::ip_gate();
+            return;
+        }
+        if ( ! THRG_Bunker_Options::active( 'stealth' ) ) {
+            return;
+        }
+        if ( 'wp-login.php' !== $script && ! ( defined( 'WP_ADMIN' ) && WP_ADMIN ) ) {
             return;
         }
         self::ip_gate();

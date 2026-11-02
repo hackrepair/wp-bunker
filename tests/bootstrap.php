@@ -111,7 +111,7 @@ function esc_textarea( $t ) { return htmlspecialchars( (string) $t, ENT_QUOTES )
 function _n( $s, $p, $n ) { return 1 === $n ? $s : $p; }
 function wp_unslash( $v ) { return $v; }
 function sanitize_key( $k ) { return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( (string) $k ) ); }
-function sanitize_text_field( $t ) { return trim( strip_tags( (string) $t ) ); }
+function sanitize_text_field( $t ) { return ( is_array( $t ) || is_object( $t ) ) ? '' : trim( strip_tags( (string) $t ) ); }
 function sanitize_textarea_field( $t ) { return trim( strip_tags( (string) $t ) ); }
 function plugin_basename( $f ) { return basename( dirname( $f ) ) . '/' . basename( $f ); }
 function plugin_dir_path( $f ) { return dirname( $f ) . '/'; }

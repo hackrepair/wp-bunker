@@ -276,3 +276,42 @@ THRG_Bunker_Options::update( array( 'hatch_failed' => 3, 'hatch_mail_error' => t
 THRG_Bunker_Hatch::disable();
 $state = THRG_Bunker_Options::state();
 check( 'turning the hatch off clears them too', 0 === $state['hatch_failed'] && 0 === $state['hatch_mail_error'] );
+
+// --- Item 04: replay, junk and overlap. ---
+list( , $token5 ) = make_link();
+reset_flow();
+$r      = hit( array( 'thrg_hatch' => $token5 ) );
+$jar5   = $r[1];
+preg_match( '/thrg_hatch_review=([a-f0-9]{48})/', $GLOBALS['mails'][0][2], $m5 );
+$sec5 = $m5[1];
+$r = hit( array( 'thrg_hatch_review' => $sec5 ), array( 'decision' => 'approve' ) );
+check( 'approval works once', 'Approved' === title( $r ) );
+$r = hit( array( 'thrg_hatch_review' => $sec5 ), array( 'decision' => 'approve' ) );
+check( 'pressing Approve again changes nothing and says already approved', 'Already approved' === title( $r ) && 'approved' === get_option( THRG_Bunker_Hatch::REQUEST_OPTION )['status'] );
+$r = hit( array( 'thrg_hatch_review' => $sec5 ), array( 'decision' => 'bogus' ) );
+check( 'an unknown decision approves and denies nothing', 'approved' === get_option( THRG_Bunker_Hatch::REQUEST_OPTION )['status'] );
+$r = hit( array( 'thrg_hatch_wait' => '1' ), null, array( THRG_Bunker_Hatch::REQUEST_COOKIE => str_repeat( 'a', 64 ) ) );
+check( 'a guessed request cookie is not let in', empty( $r[1][ THRG_Bunker_Hatch::ACCESS_COOKIE ] ) );
+$r = hit( array( 'thrg_hatch_wait' => '1' ), null, $jar5 );
+check( 'the real requester is let in once', ! empty( $r[1][ THRG_Bunker_Hatch::ACCESS_COOKIE ] ) );
+$r = hit( array( 'thrg_hatch_wait' => '1' ), null, $jar5 );
+check( 'replaying the request cookie after it was used gives no second access cookie', empty( $r[1][ THRG_Bunker_Hatch::ACCESS_COOKIE ] ) );
+$r = hit( array( 'thrg_hatch_review' => $sec5 ), array( 'decision' => 'approve' ) );
+check( 'the emailed link is dead once the request is used', 'notfound' === kind( $r ) );
+
+// Junk in the query string never lets anyone in or breaks the page.
+foreach ( array( array( 'thrg_hatch' => array( 'x' ) ), array( 'thrg_hatch' => '' ), array( 'thrg_hatch' => str_repeat( 'f', 5000 ) ), array( 'thrg_hatch_review' => array( 'a' ) ), array( 'thrg_hatch_review' => '0' ), array( 'thrg_hatch_review' => '%00' ) ) as $junk ) {
+    $before = count( $GLOBALS['mails'] );
+    $r      = hit( $junk );
+    check( 'junk link ' . substr( json_encode( $junk ), 0, 40 ) . ' sends no mail and grants no access', $before === count( $GLOBALS['mails'] ) && empty( $r[1][ THRG_Bunker_Hatch::ACCESS_COOKIE ] ) && 'passed' !== kind( $r ) );
+}
+
+// --- Strict link values and a helpful pending message. ---
+list( , $token6 ) = make_link();
+reset_flow();
+$r = hit( array( 'thrg_hatch' => $token6 . 'zz' ) );
+check( 'a link with extra junk characters is refused, not cleaned up and accepted', 'passed' !== kind( $r ) && array() === $GLOBALS['mails'] && empty( $r[1][ THRG_Bunker_Hatch::REQUEST_COOKIE ] ) );
+$r = hit( array( 'thrg_hatch' => ' ' . strtoupper( $token6 ) ) );
+check( 'case and surrounding spaces are tolerated', 'redirect' === kind( $r ) && 1 === count( $GLOBALS['mails'] ) );
+$r = hit( array( 'thrg_hatch' => $token6 ) , null, array() );
+check( 'a second browser is told how long to wait and about the new-link option', 'Approval pending' === title( $r ) && false !== strpos( $r[0]->payload[1], 'about 15 minutes' ) && false !== strpos( $r[0]->payload[1], 'new link' ) );

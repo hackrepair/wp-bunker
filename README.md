@@ -8,7 +8,7 @@
 
 If your public website is static HTML (often built and updated by AI) and WordPress only sits behind it for contact forms, mailing-list sign-ups, a chat backend or a database, most of WordPress is unused, yet bots still probe all of it. Bunker switches off everything a utility install does not need, and keeps the few doors your static site actually uses.
 
-Development version: **1.2.3 (unreleased)**. Version 1.2.1 was installed directly on the authorized test site. See the validation status below before deployment.
+Development version: **1.2.4 (unreleased)**. Version 1.2.1 was installed directly on the authorized test site. See the validation status below before deployment.
 
 ## The rule that shapes everything
 
@@ -71,9 +71,13 @@ Bunker sends only three kinds of email, with subjects in the THRG format `[domai
 
 Bunker is not a firewall, malware scanner, login-attempt limiter or two-factor plugin, and it does not log visitors.
 
+### Retained rule backups
+
+Settings includes a Server rule recovery section showing managed-block presence, retained backups and directory writability. An administrator can preserve a retained backup under a unique saved name before retrying an update. This requires the site health check to complete, a valid nonce and administrator capability. The archive operation holds the same target lock as rule changes and leaves the live rules unchanged. Saved recovery copies remain for owner review.
+
 ## Validation status
 
-Seventeen standalone suites run against WordPress stubs. PHP 8.4 syntax checks and JavaScript syntax checks pass. The test site verified the 1.2.0-to-1.2.1 replacement, REST nonce behavior, uploads toggle persistence, case-sensitive action rejection and neutral 404 output. HTTPS automation introduced in 1.2.2 was removed in 1.2.3. The rule-backup failure observed on the test site still requires owner-side filesystem review. Apache fault injection, true concurrent requests, minimum-PHP execution, disallowed-IP access and full email approval remain pending. Version 1.2.3 has no release or tag from this work.
+Seventeen standalone suites run against WordPress stubs. PHP 8.4 syntax checks and JavaScript syntax checks pass. The test site verified the 1.2.0-to-1.2.1 replacement, REST nonce behavior, uploads toggle persistence, case-sensitive action rejection and neutral 404 output. HTTPS automation introduced in 1.2.2 was removed in 1.2.3. Version 1.2.4 restored version-file and stealth protection on the test site. Both managed blocks were present, directories writable and retained backups absent. Public readme and XML-RPC probes returned 404. The original transient backup failure was not reproduced. Apache fault injection, true concurrent requests, minimum-PHP execution, disallowed-IP access and full email approval remain pending. Version 1.2.3 has no release or tag from this work.
 
 ## Development
 

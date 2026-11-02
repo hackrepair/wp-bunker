@@ -4,7 +4,7 @@ Tags: security, hardening, headless, static site, lockdown
 Requires at least: 6.9.4
 Requires PHP: 7.4
 Tested up to: 7.1.3
-Stable tag: 1.2.3
+Stable tag: 1.2.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Support link: https://github.com/hackrepair/wp-bunker/discussions
@@ -15,7 +15,7 @@ WordPress Utility Lockdown. Your static website faces the public; WordPress stay
 
 If your public website is static HTML (often built and updated by AI) and WordPress only sits behind it for contact forms, mailing-list sign-ups, a chat backend or a database, most of WordPress is unused, yet bots still probe all of it. Bunker switches off everything a utility install does not need, and keeps the few doors your static site actually uses.
 
-Development build 1.2.3 is unreleased.
+Development build 1.2.4 is unreleased.
 
 Open **Settings > Bunker**. Most lockdowns are on by default, each with a plain-language description. Untick one and the description flips to tell you what just happened. Each checkbox saves the moment you change it.
 
@@ -47,6 +47,8 @@ Open **Settings > Bunker**. Most lockdowns are on by default, each with a plain-
 **Hosting responsibility.** Configure certificates, HTTPS redirects and HSTS through your hosting provider. Bunker does not manage these settings or require HTTPS as an activation condition.
 
 **Your own 404 page.** Everything Bunker refuses gets a real 404. If your site folder has a `404.html`, Bunker uses it; otherwise a built-in page appears.
+
+**Server rule recovery.** Administrator-only metadata shows managed blocks, retained backups and directory writability. Preserve a retained backup under a unique saved name before retrying a rule update. The archive action keeps the live rules unchanged and requires a completed health check.
 
 **Review checks.** Below the options, Bunker shows read-only checks: an account named admin, unused plugins and themes, debug mode, an error_log file in the web folder, and whether WordPress shares a directory with your static site's index.html. It never changes any of these for you.
 
@@ -111,6 +113,9 @@ Those use XML-RPC. Untick **Block XML-RPC** if you use either.
 PHP lockdowns work everywhere. Bunker shows manual equivalents for its file restrictions. Configure HTTPS redirects through your Nginx hosting controls.
 
 == Changelog ==
+
+= 1.2.4 =
+* Add administrator recovery metadata and a nonce-protected action to preserve retained rule backups under unique saved names before retrying.
 
 = 1.2.3 =
 * Remove the HTTPS setting and automatic redirect rules. HTTPS is the site owner's hosting responsibility.

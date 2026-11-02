@@ -27,6 +27,7 @@ final class THRG_Bunker_Settings {
         add_action( 'wp_ajax_thrg_bunker_toggle', array( __CLASS__, 'ajax_toggle' ) );
         add_action( 'admin_post_thrg_bunker_confirm', array( __CLASS__, 'handle_confirm' ) );
         add_action( 'admin_post_thrg_bunker_master', array( __CLASS__, 'handle_master' ) );
+        add_action( 'admin_post_thrg_bunker_archive_backup', array( __CLASS__, 'handle_archive_backup' ) );
         add_action( 'admin_post_thrg_bunker_save', array( __CLASS__, 'handle_save' ) );
         add_filter( 'plugin_action_links_' . plugin_basename( THRG_BUNKER_FILE ), array( __CLASS__, 'action_links' ) );
     }
@@ -113,6 +114,21 @@ final class THRG_Bunker_Settings {
         if ( ! current_user_can( 'manage_options' ) ) {
             wp_die( esc_html__( 'You are not allowed to do this.', 'thrg-bunker' ), '', array( 'response' => 403 ) );
         }
+    }
+
+    /** Preserve a retained rules backup after an authenticated administrator requests it. */
+    public static function handle_archive_backup() {
+        self::require_admin();
+        check_admin_referer( 'thrg_bunker_archive_backup' );
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce and capability verified above.
+        $id = isset( $_POST['rule_id'] ) && is_string( $_POST['rule_id'] ) ? sanitize_key( wp_unslash( $_POST['rule_id'] ) ) : '';
+        if ( THRG_Bunker_Server_Rules::archive_backup( $id ) ) {
+            self::flash( 'success', __( 'The retained backup was preserved under a unique saved name. A fresh rule update can now be attempted.', 'thrg-bunker' ) );
+        } else {
+            self::flash( 'warning', __( 'The backup could not be archived. Check the health check, lock and filesystem permissions.', 'thrg-bunker' ) );
+        }
+        wp_safe_redirect( self::url() );
+        exit;
     }
 
     /**

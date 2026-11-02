@@ -396,6 +396,26 @@ $thrg_rail_links      = array(
         <p class="submit"><button type="submit" name="save_section" value="general" class="button button-primary"><?php esc_html_e( 'Save changes', 'thrg-bunker' ); ?></button> <span class="description"><?php esc_html_e( 'The lockdown checkboxes save the moment you change them. This button saves everything else on the page, including your IP list.', 'thrg-bunker' ); ?></span></p>
     </form>
 
+    <section class="bunker-block" id="bunker-recovery">
+        <h2><?php esc_html_e( 'Server rule recovery', 'thrg-bunker' ); ?></h2>
+        <p><?php esc_html_e( 'A retained backup protects an earlier configuration. Preserving it under a unique saved name allows a fresh update without deleting that recovery copy. Existing server rules remain in place until an update succeeds.', 'thrg-bunker' ); ?></p>
+        <?php foreach ( THRG_Bunker_Server_Rules::ids() as $thrg_rule_id ) : ?>
+            <?php $thrg_recovery = THRG_Bunker_Server_Rules::recovery_status( $thrg_rule_id ); ?>
+            <p><code><?php echo esc_html( $thrg_recovery['path'] ); ?></code><br />
+            <?php echo esc_html( $thrg_recovery['present'] ? __( 'Managed block present.', 'thrg-bunker' ) : __( 'Managed block absent.', 'thrg-bunker' ) ); ?>
+            <?php echo esc_html( $thrg_recovery['backup'] ? __( 'Retained backup exists.', 'thrg-bunker' ) : __( 'No retained backup.', 'thrg-bunker' ) ); ?>
+            <?php echo esc_html( $thrg_recovery['writable'] ? __( 'Directory writable.', 'thrg-bunker' ) : __( 'Directory is not writable.', 'thrg-bunker' ) ); ?></p>
+            <?php if ( $thrg_recovery['backup'] ) : ?>
+                <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                    <input type="hidden" name="action" value="thrg_bunker_archive_backup" />
+                    <input type="hidden" name="rule_id" value="<?php echo esc_attr( $thrg_rule_id ); ?>" />
+                    <input type="hidden" name="_wpnonce" value="<?php echo esc_attr( wp_create_nonce( 'thrg_bunker_archive_backup' ) ); ?>" />
+                    <button class="button" type="submit"><?php echo esc_html( 'version_files' === $thrg_rule_id ? __( 'Preserve root backup and allow retry', 'thrg-bunker' ) : __( 'Preserve uploads backup and allow retry', 'thrg-bunker' ) ); ?></button>
+                </form>
+            <?php endif; ?>
+        <?php endforeach; ?>
+    </section>
+
     <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="bunker-master-form">
         <input type="hidden" name="action" value="thrg_bunker_master" />
         <input type="hidden" name="_wpnonce" value="<?php echo esc_attr( wp_create_nonce( 'thrg_bunker_master' ) ); ?>" />

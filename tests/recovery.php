@@ -11,6 +11,16 @@ fclose( $lock );
 $backup = THRG_Bunker_Server_Rules::backup_path( $path );
 file_put_contents( $backup, 'recovery snapshot' );
 check( 'retry preserves an existing recovery snapshot', ! THRG_Bunker_Server_Rules::apply( 'version_files' )['ok'] && 'recovery snapshot' === file_get_contents( $backup ) );
+$GLOBALS['http'] = 200;
+$before = file_get_contents( $path );
+check( 'administrator can preserve a retained snapshot for retry', THRG_Bunker_Server_Rules::archive_backup( 'version_files' ) );
+$archives = glob( $backup . '.saved-*' );
+check( 'archiving preserves the exact snapshot and live file', 1 === count( $archives ) && 'recovery snapshot' === file_get_contents( $archives[0] ) && $before === file_get_contents( $path ) );
+check( 'archive rejects arbitrary target ids', ! THRG_Bunker_Server_Rules::archive_backup( '../other' ) );
+file_put_contents( $backup, 'next snapshot' );
+$GLOBALS['http'] = 500;
+check( 'unhealthy site keeps the retained backup in place', ! THRG_Bunker_Server_Rules::archive_backup( 'version_files' ) && 'next snapshot' === file_get_contents( $backup ) );
+$GLOBALS['http'] = 200;
 unlink( $backup );
 $GLOBALS['http_callback'] = static function ( $url ) {
     if ( false !== strpos( $url, '/uploads/' ) ) {

@@ -261,6 +261,49 @@ final class THRG_Bunker_Server_Rules {
         return $path . '.thrg-bunker-backup';
     }
 
+    /** Read-only recovery metadata for the administrator's settings page. */
+    public static function recovery_status( $id ) {
+        $path   = self::target( $id );
+        $backup = self::backup_path( $path );
+        return array(
+            'path'     => $path,
+            'backup'   => file_exists( $backup ),
+            'readable' => is_readable( $backup ),
+            // phpcs:ignore WordPress.WP.AlternativeFunctions -- Read-only native permission metadata for local rule recovery.
+            'writable' => is_writable( dirname( $path ) ),
+            'present'  => self::present( $path ),
+        );
+    }
+
+    /** Preserve a retained snapshot under a unique name so a fresh transaction can run. */
+    public static function archive_backup( $id ) {
+        if ( ! in_array( $id, self::ids(), true ) ) {
+            return false;
+        }
+        $path = self::target( $id );
+        // phpcs:ignore WordPress.WP.AlternativeFunctions -- A native lock serializes rule and recovery operations.
+        $lock = fopen( $path . '.thrg-bunker-lock', 'c' );
+        if ( false === $lock ) {
+            return false;
+        }
+        try {
+            if ( ! flock( $lock, LOCK_EX | LOCK_NB ) ) {
+                return false;
+            }
+            $backup = self::backup_path( $path );
+            if ( ! is_file( $backup ) || is_link( $backup ) || 'ok' !== self::check_site() ) {
+                return false;
+            }
+            $archive = $backup . '.saved-' . gmdate( 'YmdHis' ) . '-' . bin2hex( random_bytes( 8 ) );
+            // phpcs:ignore WordPress.WP.AlternativeFunctions -- Rename preserves the recovery bytes without overwriting an earlier archive.
+            return rename( $backup, $archive );
+        } finally {
+            flock( $lock, LOCK_UN );
+            // phpcs:ignore WordPress.WP.AlternativeFunctions -- Release the native transaction lock.
+            fclose( $lock );
+        }
+    }
+
     /**
      * Delete the backup kept next to a rules file, if there is one.
      *
@@ -337,7 +380,7 @@ final class THRG_Bunker_Server_Rules {
             if ( file_exists( self::backup_path( $path ) ) || ! self::write_atomic( self::backup_path( $path ), $old ) ) {
                 return array(
 					'ok'      => false,
-					'message' => __( 'Bunker could not create a fresh backup. Preserve or restore the existing backup before retrying.', 'thrg-bunker' ),
+					'message' => __( 'Bunker could not create a fresh backup. Review Server rule recovery below for retained backups or directory permissions.', 'thrg-bunker' ),
 				);
             }
         }

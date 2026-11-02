@@ -71,7 +71,7 @@ final class THRG_Bunker_Options {
             ),
             'ip_lock'       => array(
                 'title'   => __( 'Lock the login page and dashboard to your IP addresses', 'thrg-bunker' ),
-                'on'      => __( 'Only the IP addresses listed below can reach the login page and dashboard. Your form keeps working for everyone.', 'thrg-bunker' ),
+                'on'      => __( 'Only the IP addresses listed below can reach the login page and dashboard. Your form keeps working for everyone. You can also make a hatch link below: a spare key that only works after you approve it by email.', 'thrg-bunker' ),
                 'off'     => __( 'The login page and dashboard are open to the whole internet again, so password guessing can reach them.', 'thrg-bunker' ),
                 'default' => 1,
             ),
@@ -95,7 +95,7 @@ final class THRG_Bunker_Options {
             ),
             'cron_watch'    => array(
                 'title'   => __( 'Watch WordPress\'s scheduled tasks', 'thrg-bunker' ),
-                'on'      => __( 'Your visitors load the static page, not WordPress, so WordPress\'s scheduled tasks, including automatic updates, may rarely run. Bunker warns you when they stall and shows the cPanel cron command that fixes it.', 'thrg-bunker' ),
+                'on'      => __( 'Your visitors load the static page, not WordPress, so WordPress\'s scheduled tasks, including automatic updates, may rarely run. Bunker warns you when they stall and shows the cron command that fixes it.', 'thrg-bunker' ),
                 'off'     => __( 'Bunker has stopped watching scheduled tasks. If they stall, automatic updates can quietly stop and you won\'t be told.', 'thrg-bunker' ),
                 'default' => 1,
             ),
@@ -103,6 +103,12 @@ final class THRG_Bunker_Options {
                 'title'   => __( 'Only allow known form actions (logged-out visitors)', 'thrg-bunker' ),
                 'on'      => __( 'Logged-out visitors can only run the form and chat actions you list below. Every other request to admin-post.php and admin-ajax.php from a stranger is refused.', 'thrg-bunker' ),
                 'off'     => __( 'admin-post.php and admin-ajax.php accept any action from anyone again, including actions that installed plugins registered for logged-out visitors.', 'thrg-bunker' ),
+                'default' => 0,
+            ),
+            'stealth'       => array(
+                'title'   => __( 'Answer 404 to everything WordPress-related', 'thrg-bunker' ),
+                'on'      => __( 'Visitors who are not on your IP list (or an approved hatch browser) get a plain "not found" for the login page and dashboard, and everyone gets one for core files, plugin and theme readmes, version files and WordPress folders. Your form, chat and allowed routes keep working. This hides WordPress; it does not protect it. The other lockdowns do that.', 'thrg-bunker' ),
+                'off'     => __( 'WordPress answers probes again, so scanners and quick guesses can confirm it is installed.', 'thrg-bunker' ),
                 'default' => 0,
             ),
         );
@@ -119,18 +125,29 @@ final class THRG_Bunker_Options {
             $toggles[ $id ] = (int) $item['default'];
         }
         return array(
-            'confirmed'       => 0,
-            'declined'        => 0,
-            'toggles'         => $toggles,
-            'rest_allow'      => '',
-            'ip_list'         => '',
-            'ip_saved'        => 0,
-            'ip_proxy'        => 'remote_addr',
-            'actions_allow'   => '',
-            'notfound_source' => 'auto',
-            'cron_email'      => 0,
-            'delete_data'     => 0,
-            'server_rules'    => array(),
+            'confirmed'        => 0,
+            'declined'         => 0,
+            'paused'           => 0,
+            'toggles'          => $toggles,
+            'rest_allow'       => '',
+            'ip_list'          => '',
+            'ip_saved'         => 0,
+            'ip_proxy'         => 'remote_addr',
+            'actions_allow'    => '',
+            'notfound_source'  => 'auto',
+            'hatch_on'         => 0,
+            'hatch_hash'       => '',
+            'hatch_version'    => 0,
+            'hatch_created'    => 0,
+            'hatch_email'      => '',
+            'hatch_hours'      => 4,
+            'hatch_failed'     => 0,
+            'hatch_failed_at'  => 0,
+            'hatch_mail_error' => 0,
+            'cron_email'       => 0,
+            'welcome_sent'     => 0,
+            'delete_data'      => 0,
+            'server_rules'     => array(),
         );
     }
 
@@ -207,7 +224,8 @@ final class THRG_Bunker_Options {
      * Whether Bunker is allowed to enforce anything right now.
      *
      * Nothing is enforced until the administrator has confirmed once, never
-     * in safe mode, and never on a multisite network (unsupported in 1.0).
+     * while the On | Off switch is Off, never in safe mode, and never on a
+     * multisite network (unsupported in 1.0).
      *
      * @return bool
      */
@@ -216,7 +234,7 @@ final class THRG_Bunker_Options {
             return false;
         }
         $state = self::state();
-        return ! empty( $state['confirmed'] );
+        return ! empty( $state['confirmed'] ) && empty( $state['paused'] );
     }
 
     /**

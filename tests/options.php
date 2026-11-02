@@ -4,7 +4,7 @@ require __DIR__ . '/bootstrap.php';
 thrg_load_plugin();
 
 $registry = THRG_Bunker_Options::registry();
-check( 'thirteen lockdowns', 13 === count( $registry ) );
+check( 'fourteen lockdowns', 14 === count( $registry ) );
 $complete = true;
 foreach ( $registry as $item ) {
     foreach ( array( 'title', 'on', 'off' ) as $key ) {
@@ -23,7 +23,7 @@ foreach ( $registry as $id => $item ) {
         $off[] = $id;
     }
 }
-check( 'every default is on except item 13', array( 'known_actions' ) === $off );
+check( 'every default is on except items 13 and 14', array( 'known_actions', 'stealth' ) === $off );
 
 // Nothing is enforced until the administrator confirms.
 check( 'not enforcing before confirmation', ! THRG_Bunker_Options::enforcing() );

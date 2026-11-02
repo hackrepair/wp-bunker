@@ -3,7 +3,7 @@
 **Working name:** The Hack Repair Guy's Bunker
 **Tagline:** WordPress Utility Lockdown. Your static website faces the public; WordPress stays underground.
 **Slug:** `thrg-bunker` (GitHub repository `hackrepair/wp-bunker`, release asset `thrg-bunker.X.Y.Z.zip`, tag `vX.Y.Z`)
-**Status:** first build, version 0.1.0 (2026-11-01). All thirteen lockdowns, the settings page, first-run confirmation, safe mode, 404 page, review checks, updater and tests are written. Not committed, not released. Shared PHPCS (WordPress-Extra + PHPCompatibilityWP 7.4+, via the shared ruleset) is clean: 15 files, 0 errors, 0 warnings (2026-11-01).
+**Status:** version 1.2.0 (2026-11-01). The version jumps from 0.1.0 to 1.2.0 at the owner's choice; 0.2.0 was never released. Fourteen lockdowns, the left column with On | Off switches, the hatch link, the welcome and approval emails, first-run confirmation, safe mode, 404 page, review checks, updater and tests are written. Installed and tested on resellertest1.tvsecure.net. Shared PHPCS (WordPress-Extra + PHPCompatibilityWP 7.4+) is clean: 19 files, 0 errors, 0 warnings. Pushed to `main` of `hackrepair/wp-bunker`; no GitHub release has been cut yet.
 
 **Name decided:** The Hack Repair Guy's Bunker (chosen over Stagehand, which collides with Browserbase's Stagehand, and Backstage, which collides with an existing WordPress plugin and Spotify's Backstage).
 
@@ -31,7 +31,7 @@ Every lockdown must leave these working. A lockdown that breaks the form is a bu
 
 In scope: turning off and blocking WordPress features a utility install does not use, plus a small set of read-only checks and a recommendation panel.
 
-Out of scope: a firewall, malware scanning, login-attempt limiting, two-factor and visitor logging. Those belong to HackGuard Security. Bunker detects HackGuard and shows a short note so both can run side by side without duplicate rules.
+Out of scope: a firewall, malware scanning, login-attempt limiting, two-factor and visitor logging.
 
 ## Settings page
 
@@ -41,7 +41,7 @@ Location: **Settings > Bunker** (also linked from the Plugins screen).
 
 1. Every lockdown is **on by default**, with two exceptions: item 13 ships **off** (see item 13), and item 8 shows as ticked but does not enforce until the owner has saved its list once (see item 8). Each one is a checkbox with a short title and a plain-language description of what it does.
 2. **Each checkbox saves the moment it changes** (admin-ajax, `manage_options` capability, nonce). No Save button for the toggles.
-3. When a box is **unchecked**, its description rotates (short flip or slide animation, about 300 ms) to a past-tense message describing what just happened. The card color shifts from green to amber, and an **Undo** link appears.
+3. When a box is **unchecked**, its description rotates (short flip or slide animation, about 300 ms) to a past-tense message describing what just happened. The card color shifts from green to amber. There is no Undo link: ticking the box again does the same.
 4. When the box is checked again, the text rotates back to the description and the card returns to green.
 5. The state survives reloads: an unchecked option always shows its "what happened" text.
 6. Respect `prefers-reduced-motion`: swap the text without the animation.
@@ -57,7 +57,7 @@ All boxes are already ticked on this screen, so the defaults stay on. The owner 
 
 **If the owner picks "Not yet":** nothing is enforced. The settings page stays usable, but a persistent amber banner at the top says "Bunker is installed but not protecting this site yet" with a **Lock it down** button. The confirmation is offered again on every visit to the page. Toggles can still be set while waiting; they take effect when the owner confirms.
 
-**Multisite:** not supported in 1.0. On a multisite network, Bunker shows a notice and enforces nothing.
+**Multisite:** not supported yet. On a multisite network, Bunker shows a notice and enforces nothing.
 
 ### The lockdowns
 
@@ -72,7 +72,7 @@ Each entry lists the on text, the off text shown the moment it is unticked, and 
 **2. Block XML-RPC**
 - On: Closes xmlrpc.php, an old remote-publishing door that bots use to try thousands of passwords in a single request.
 - Off: xmlrpc.php is open again. Bots can resume password guessing and pingback attacks through it.
-- How: refuse with 403 on `plugins_loaded` when `XMLRPC_REQUEST` is defined, plus `xmlrpc_enabled` and `xmlrpc_methods` filters.
+- How: refuse with 403 (404 when item 14 is on) on `plugins_loaded` when `XMLRPC_REQUEST` is defined, plus `xmlrpc_enabled` and `xmlrpc_methods` filters.
 - Note: Jetpack and the WordPress mobile app use XML-RPC. The description says to untick this if either is in use.
 
 **3. Lock the REST API to logged-in users**
@@ -104,7 +104,7 @@ Each entry lists the on text, the off text shown the moment it is unticked, and 
 **8. Lock the login page and dashboard to your IP addresses**
 - On: Only the IP addresses listed below can reach the login page and dashboard. Your form keeps working for everyone.
 - Off: The login page and dashboard are open to the whole internet again, so password guessing can reach them.
-- How: enforced in PHP (not .htaccess), so renaming the plugin folder in cPanel always removes it. admin-post.php, admin-ajax.php and cron are exempt. The list is pre-filled with the administrator's IP at first-run confirmation and shown with a warning that a changing IP address will lock them out, plus the recovery steps.
+- How: enforced in PHP (not .htaccess), so renaming the plugin folder in File Manager always removes it. admin-post.php, admin-ajax.php and cron are exempt. The list is pre-filled with the administrator's IP at first-run confirmation and shown with a warning that a changing IP address will lock them out, plus the recovery steps. The hatch link (below) is the spare key.
 - Enforcement waits for review: after first-run confirmation the card is ticked but shows amber, "Waiting for you to review your IP list," and **nothing is blocked**. The lock starts enforcing only after the owner clicks **Save list** once. Editing and saving the list later takes effect immediately.
 - Proxy and CDN handling: use `REMOTE_ADDR` by default. Only trust a forwarded header (`CF-Connecting-IP`, `X-Forwarded-For`) when the owner picks it in a "My site is behind Cloudflare or a proxy" setting, and when `REMOTE_ADDR` is in that provider's known range. Show the detected address and which source it came from before pre-filling, so a wrong address is visible at once.
 - The list accepts IPv4, IPv6 and CIDR ranges, validated on save. Refuse to save a list that does not include the current administrator's address unless they confirm.
@@ -117,7 +117,7 @@ Each entry lists the on text, the off text shown the moment it is unticked, and 
 **10. Hide version files, logs and folder listings**
 - On: Blocks readme.html, license.txt, wp-config-sample.php and error logs, and stops folders from listing their files.
 - Off: Version and log files are reachable again, and folders without an index file will list their contents.
-- How: a marked block in the site's .htaccess (Apache and LiteSpeed). These rules are harmless if left behind, but they are removed on deactivation. On Nginx, show the rules to copy instead of writing them.
+- How: a marked block in the site's .htaccess (Apache and LiteSpeed). These rules are harmless if left behind, but they are removed on deactivation. With item 14 on, the 403 rules for version files are replaced by 404 rules. On Nginx, show the rules to copy instead of writing them.
 - Safety check: `Options -Indexes` can cause a 500 error where `AllowOverride` does not permit it. After writing the block, request the site's home page and `wp-login.php` with a loopback request. If either returns a 5xx, restore the backed-up `.htaccess` automatically and show a notice saying which rule failed.
 
 **11. Block PHP in the uploads folder**
@@ -127,9 +127,9 @@ Each entry lists the on text, the off text shown the moment it is unticked, and 
 - Note: a few plugins (some caching and page-builder tools) legitimately run PHP from uploads. The description says to untick this if something stops working after turning it on.
 
 **12. Watch WordPress's scheduled tasks**
-- On: Your visitors load the static page, not WordPress, so WordPress's scheduled tasks, including automatic updates, may rarely run. Bunker warns you when they stall and shows the cPanel cron command that fixes it.
+- On: Your visitors load the static page, not WordPress, so WordPress's scheduled tasks, including automatic updates, may rarely run. Bunker warns you when they stall and shows the cron command that fixes it.
 - Off: Bunker has stopped watching scheduled tasks. If they stall, automatic updates can quietly stop and you won't be told.
-- How: record the last WP-Cron run. If it is more than 24 hours old, show an admin notice and an optional email. Show a ready-to-paste cPanel cron line and the `DISABLE_WP_CRON` instruction.
+- How: record the last WP-Cron run. If it is more than 24 hours old, show an admin notice and an optional email. Show a ready-to-paste cron line and the `DISABLE_WP_CRON` instruction.
 - This is a monitor, not enforcement.
 
 **13. Only allow known form actions (logged-out visitors)**
@@ -156,35 +156,42 @@ These are not toggles. Each shows a status and what to do:
 - `WP_DEBUG` or `WP_DEBUG_DISPLAY` is on.
 - An `error_log` file is in the web root.
 - WordPress is in the same folder as the static site's `index.html` (links to the recommendation below).
-- HackGuard Security is active (informational: both can run together).
+- Whether item 14 is on (informational).
+
+Each check shows a coloured word: **Good**, **Bad** or **Info**.
 
 ### Recommendation panel (bottom of the page)
 
-Title: **Even better: give WordPress its own address**
+Title: **Heads up: Sharing your static web page on WordPress is not recommended.** (The red **Bad** word sits left of the title, as in the review checks. The left-column card carries the same message with a Learn more link to this panel.)
 
-Text (draft): Right now WordPress shares a folder with your website. If WordPress were ever broken into, the attacker could rewrite your homepage too. Moving WordPress to its own subdomain, such as forms.yoursite.com, keeps it apart. Putting it in a separate cPanel account is stronger still, because a break-in there can't touch your website's files at all. Your form keeps working: you only change its action address to the new location.
+Text (draft): Right now WordPress shares a folder with your website. If WordPress were ever broken into, the attacker could rewrite your homepage too. Moving WordPress to its own subdomain, such as forms.yoursite.com, keeps it apart. Putting it in a separate hosting account is stronger still, because a break-in there can't touch your website's files at all. Your form keeps working: you only change its action address to the new location.
 
 The panel shows whether the current install shares a folder with an `index.html`, and links to the hosting provider's help.
 
 ## Safety and recovery
 
-- PHP enforcement for anything that can lock someone out (items 1–9 and 13). Item 12 is a monitor only. Renaming the plugin folder through cPanel File Manager removes the PHP enforcement immediately.
+- PHP enforcement for anything that can lock someone out (items 1–9 and 13). Item 12 is a monitor only. Renaming the plugin folder through File Manager removes the PHP enforcement immediately.
 - Server rules only for items 10 and 11. They are low risk but not zero: item 10 can trigger a server error on restrictive hosts (see its safety check) and item 11 can stop plugins that run PHP from uploads. They sit between `# BEGIN THRG Bunker` / `# END THRG Bunker` markers. Write them atomically, back up .htaccess first, and remove them on deactivation.
+- **Deactivation** switches everything off: the rules are removed, the hatch link is killed (`hatch_on` 0, hash cleared, version bumped, pending request deleted) and `paused` is set. Settings are kept. Reactivating leaves Bunker Off until the owner presses On in the left column. Only "Delete all plugin data", used when the plugin is deleted, removes the settings. The welcome email is not sent again.
 - Safe mode: `define( 'THRG_BUNKER_SAFE_MODE', true );` in wp-config.php pauses all PHP enforcement, removes the `.htaccess` marker blocks for items 10 and 11 (and restores them when safe mode is turned off), and shows a notice.
 - Renaming the plugin folder runs no deactivation code, so the `.htaccess` blocks for items 10 and 11 stay in place. The recovery notes say so and explain how to delete the marked blocks by hand.
 - Never block admin-post.php, admin-ajax.php, wp-cron.php or the allowed REST routes.
 
-## Architecture (planned)
+## Architecture
 
-- `index.php`: plugin header, constants (`THRG_BUNKER_VERSION`), bootstrap, Plugins-screen links and View details.
-- `includes/class-thrg-bunker-options.php`: registry of lockdowns (id, title, on text, off text, default, enforcement callback). The page, the AJAX handler and the tests all read from this one list.
-- `includes/class-thrg-bunker-lockdown.php`: PHP-level enforcement hooks.
-- `includes/class-thrg-bunker-server-rules.php`: .htaccess marker blocks, server detection, Nginx fallback text.
+- `index.php`: plugin header, constants (`THRG_BUNKER_VERSION`), bootstrap, activation (welcome email) and deactivation hooks, Plugins-screen links and View details.
+- `includes/class-thrg-bunker-options.php`: registry of lockdowns (id, title, on text, off text, default, enforcement callback) and the saved state, including `paused`. The page, the AJAX handler and the tests all read from this one list.
+- `includes/class-thrg-bunker-lockdown.php`: PHP-level enforcement hooks, including the IP gate.
+- `includes/class-thrg-bunker-hatch.php`: the hatch link, approval email flow, access cookie.
+- `includes/class-thrg-bunker-server-rules.php`: .htaccess marker blocks, server detection, Nginx fallback text, item 14 rules.
+- `includes/class-thrg-bunker-notfound.php`: Bunker's 404 page.
+- `includes/class-thrg-bunker-cron.php`: the scheduled-task watcher and its optional email.
+- `includes/class-thrg-bunker-mail.php` and `class-thrg-bunker-welcome.php`: the THRG standard subject (`[domain] [Bunker] Purpose`), the site line, and the one-time welcome email.
 - `includes/class-thrg-bunker-checks.php`: review checks.
-- `includes/view-settings.php`, `assets/settings.css`, `assets/settings.js`: the page, instant save and text rotation.
+- `includes/class-thrg-bunker-settings.php`, `view-settings.php`, `assets/settings.css`, `assets/settings.js`: the page, the left column, the On | Off switches, instant save and text rotation.
 - `includes/class-thrg-bunker-updater.php` and `plugin-update-checker/`: GitHub release updates.
 - `includes/companion-plugins.php`: the **Other THRG Plugins** tab in View details.
-- `uninstall.php`: remove options and server-rule blocks. Delete all plugin data only when the owner ticks that option.
+- `uninstall.php`: remove the server-rule blocks always; remove options only when the owner ticks Delete all plugin data.
 
 ## Hack Repair plugin standard
 
@@ -196,7 +203,7 @@ The panel shows whether the current install shares a folder with an `index.html`
 - Use the 2026 THRG heart mascot artwork on the settings page, matching Site Inspector and Plugin Detective.
 - Keep `PROJECT.md`, `README.md`, `tests/` and `.gitignore` out of the release zip.
 
-## Tests (planned)
+## Tests
 
 - Option registry: every lockdown has a title, on text, off text and default, and every default is on.
 - Each lockdown blocks what it should and leaves admin-post.php, admin-ajax.php, wp-cron.php and allowed REST routes working.
@@ -208,9 +215,12 @@ The panel shows whether the current install shares a folder with an `index.html`
 - Proxy and CDN: `REMOTE_ADDR` used by default; forwarded header trusted only when selected and the source is a known range; IPv6 and CIDR entries validated; saving a list without the admin's own address needs confirmation.
 - Safe mode with server rules: marker blocks are removed on entering safe mode and restored on leaving it.
 - Item 10 post-write check: a simulated 5xx restores the backed-up `.htaccess`.
-- Undo link: restores the on state and the description text.
 - No-JavaScript fallback: toggles still work through a normal form post.
 - Multisite: shows the notice and enforces nothing.
+- Master switch: Off pauses everything and keeps the settings; On resumes; the IP lock and hatch switches work; admin and nonce required.
+- Deactivation: rules removed, hatch killed, Bunker paused, data kept.
+- Emails: welcome sent once; subjects follow the THRG standard; no secrets in subjects; failed sends are not retried.
+- Hatch and item 14: see `tests/hatch.php` and `tests/stealth.php`.
 - Item 8 waiting state: ticked but not enforced until the list is saved once; enforced immediately after; later edits apply at once.
 - 404 page: detected `404.html` is served with status 404 and noindex; PHP inside it is not executed; built-in page used when none exists or when forced; no WordPress version or theme output.
 - Item 13: cannot be turned on with an empty allowlist; listed actions pass for logged-out visitors, other actions are refused, logged-in users are unaffected.
@@ -225,12 +235,16 @@ Decided:
 - IP lock (item 8) waits for the owner to review and save the list once before it enforces.
 - Item 13 (known form actions only) ships off by default and cannot be turned on with an empty list.
 - Missing pages get Bunker's own 404 page (the owner's `404.html` if present, otherwise a built-in page).
-- Multisite is unsupported in 1.0.
+- Multisite is unsupported for now.
+- Version 1.2.0 for the first push (owner's choice).
+- Deactivation switches everything off and keeps the data; deleting the plugin removes data only if the box is ticked.
+- Emails follow the THRG standard subject format `[domain] [Plugin] Purpose`.
 
 Still to do before the first release:
 
-1. Confirm the GitHub repository `hackrepair/wp-bunker` is set up (its name differs from the slug on purpose; the slug and zip name stay `thrg-bunker`).
-2. Update the settings-page artwork and copy to the bunker theme (heart mascot, blast-door motif).
+1. Update the settings-page artwork and copy to the bunker theme (heart mascot, blast-door motif).
+2. Test the hatch email and the outsider 404 on the login page from a non-allowed IP.
+3. Cut the GitHub release (`v1.2.0`, asset `thrg-bunker.1.2.0.zip`) when the owner says so.
 
 ## Build order
 
@@ -239,3 +253,30 @@ Still to do before the first release:
 3. **Review checks and the recommendation panel.**
 4. **Higher-risk lockdowns:** items 3, 4, 1 and 13, then the IP lock (item 8) once proxy handling is tested.
 5. **Server rules:** items 10 and 11 with the post-write check, then the demo-site end-to-end test with every lockdown on.
+
+## Hatch link (1.2.0)
+
+A spare key for the IP lock. Decided with the owner on 2026-11-01:
+- The IP list stays the normal way in. The hatch is for "just in case" (changed IP).
+- Opening the hatch link (`wp-login.php?thrg_hatch=TOKEN`) emails the administrator. Nothing else happens until someone presses **Approve** on the confirmation page behind the email link. Opening that page changes nothing, so mail scanners cannot approve.
+- Approval grants the browser that asked (not the one that clicked) a signed cookie for 1, 4, 12 or 24 hours (default 4), tied to the browser string and to the link version. Making a new link or turning the hatch off ends every session.
+- One pending request at a time; at most one email a minute and five an hour. Wrong links get Bunker's 404 and are counted.
+- If the email cannot be sent the hatch stays shut (it is the gate). Fallbacks: rename the plugin folder or set `THRG_BUNKER_SAFE_MODE`.
+- Only the SHA-256 of the token is stored; the link is shown once.
+- Visitors on the allowed list who open the link go straight to the login page, so no email is sent for them.
+- Possible later: several named links, a country or network requirement.
+
+## Item 14: answer 404 to everything WordPress-related (1.2.0)
+
+Off by default; the owner dislikes security through obscurity, so the settings text says plainly that it hides and does not protect.
+- Login page and dashboard: refused visitors get Bunker's 404 instead of the 403 "Access limited" page. The IP gate also runs on `init` (before core's `/wp-admin/` redirect). Needs the IP lock enforcing.
+- Root `.htaccess` block (shared with item 10; item 14 replaces the 403 rules with 404 `RedirectMatch` rules because a 403 would answer first): core PHP files, version files and logs, `wp-admin/install.php`, bare `wp-content`, `wp-includes`, plugin and theme folders and their readme/changelog/license files. Static assets that WordPress screens load (`/wp-includes/js/...`) are deliberately not blocked.
+- XML-RPC answers 404 instead of 403. `admin-post.php`, `admin-ajax.php`, `wp-cron.php` and allowed REST routes are untouched.
+- A read-only review check reports whether it is on.
+
+## For a later update
+
+- Settings page "*" note linking to the bottom panel: covered for now by the left-column warning card (1.2.0). Build it out further later.
+- Left column (1.2.0): sticky 210px rail with status and On | Off switches (Bunker, IP lock, hatch link), jump links, Save changes and one warning card, modelled on HackGuard's inner sidebar; kept deliberately light. Collapses above the page at 1024px. The Hatch link section sits under the lockdowns (its buttons post through a separate form, because forms cannot nest).
+- Wording change, queued by Jim: "Sharing your static web page on WordPress is not recommended." becomes "Sharing your static web page in the same directory as WordPress is not recommended." (left-column card, bottom section heading, review check pointer, readmes).
+- Possible: a server-level 404 that matches Bunker's own 404 page on LiteSpeed (an `ErrorDocument 404` line when a `404.html` exists), so refused requests look the same everywhere.

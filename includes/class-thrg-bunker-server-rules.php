@@ -45,6 +45,9 @@ final class THRG_Bunker_Server_Rules {
             '</IfModule>',
         );
         if ( 'version_files' === $id ) {
+            if ( THRG_Bunker_Options::active( 'stealth' ) ) {
+                return self::stealth_lines();
+            }
             return array_merge(
                 array( '<FilesMatch "^(readme\.html|license\.txt|wp-config-sample\.php|error_log|debug\.log|php_errorlog)$">' ),
                 $deny,
@@ -65,12 +68,38 @@ final class THRG_Bunker_Server_Rules {
     }
 
     /**
+     * Rules for item 14: a plain 404 (not a 403) for files and folders that only WordPress has.
+     *
+     * Replaces the item 10 rules in the same block, because a 403 would answer first. Static
+     * files WordPress's own screens need (such as /wp-includes/js/) are deliberately not touched.
+     *
+     * @return string[]
+     */
+    public static function stealth_lines() {
+        return array(
+            '<IfModule mod_alias.c>',
+            '    RedirectMatch 404 (?i)/(readme\.html|license\.txt|wp-config-sample\.php|error_log|debug\.log|php_errorlog)$',
+            '    RedirectMatch 404 (?i)/(wp-load|wp-blog-header|wp-settings|wp-trackback|wp-links-opml|wp-signup|wp-activate|wp-mail|wp-comments-post)\.php$',
+            '    RedirectMatch 404 (?i)/wp-admin/install\.php$',
+            '    RedirectMatch 404 (?i)/wp-(content|includes)/?$',
+            '    RedirectMatch 404 (?i)/wp-content/(index\.php|(plugins|mu-plugins|themes|uploads|upgrade)/?(index\.php)?)$',
+            '    RedirectMatch 404 (?i)/wp-content/(plugins|mu-plugins|themes)/[^/]+/?(index\.php)?$',
+            '    RedirectMatch 404 (?i)/wp-content/(plugins|mu-plugins|themes)/.+/(readme|changelog|changes|license|licence|upgrade)[^/]*\.(txt|md|html)$',
+            '</IfModule>',
+            'Options -Indexes',
+        );
+    }
+
+    /**
      * The Nginx equivalent, shown to the owner to copy.
      *
      * @param string $id Lockdown id.
      * @return string
      */
     public static function nginx_text( $id ) {
+        if ( 'version_files' === $id && THRG_Bunker_Options::active( 'stealth' ) ) {
+            return "location ~* /(readme\\.html|license\\.txt|wp-config-sample\\.php|error_log|debug\\.log|php_errorlog|wp-load\\.php|wp-blog-header\\.php|wp-settings\\.php|wp-trackback\\.php|wp-links-opml\\.php|wp-signup\\.php|wp-activate\\.php|wp-mail\\.php|wp-comments-post\\.php)\$ {\n    return 404;\n}\nlocation ~* /wp-admin/install\\.php\$ {\n    return 404;\n}\nlocation ~* /wp-content/(plugins|mu-plugins|themes)/.+/(readme|changelog|changes|license|licence|upgrade)[^/]*\\.(txt|md|html)\$ {\n    return 404;\n}\nlocation ~* ^/wp-(content|includes)/?\$ {\n    return 404;\n}\nautoindex off;";
+        }
         if ( 'version_files' === $id ) {
             return "location ~* ^/(readme\\.html|license\\.txt|wp-config-sample\\.php|error_log|debug\\.log|php_errorlog)\$ {\n    deny all;\n}\nautoindex off;";
         }
@@ -334,13 +363,18 @@ final class THRG_Bunker_Server_Rules {
         $changed  = false;
         foreach ( self::ids() as $id ) {
             $want = THRG_Bunker_Options::active( $id );
-            $had  = ! empty( $recorded[ $id ] );
-            if ( $want && ! $had ) {
+            if ( 'version_files' === $id && ! $want ) {
+                // Item 14 shares this file and brings its own rules.
+                $want = THRG_Bunker_Options::active( 'stealth' );
+            }
+            $sig = $want ? md5( implode( "\n", self::lines( $id ) ) ) : '';
+            $had = ! empty( $recorded[ $id ] );
+            if ( $want && ( ! $had || (string) $recorded[ $id ] !== $sig ) ) {
                 $result = self::apply( $id );
                 if ( $result['ok'] ) {
-                    $recorded[ $id ] = 1;
+                    $recorded[ $id ] = $sig;
                 } else {
-                    THRG_Bunker_Options::set( $id, false );
+                    THRG_Bunker_Options::set( 'version_files' === $id && THRG_Bunker_Options::active( 'stealth' ) ? 'stealth' : $id, false );
                     if ( '' !== $result['message'] ) {
                         $messages[] = $result['message'];
                     }

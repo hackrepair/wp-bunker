@@ -24,7 +24,7 @@ final class THRG_Bunker_Checks {
             self::debug_mode(),
             self::error_log(),
             self::shares_folder(),
-            self::hackguard(),
+            self::stealth(),
         );
     }
 
@@ -133,34 +133,25 @@ final class THRG_Bunker_Checks {
             'status' => $shared ? 'attention' : 'good',
             'title'  => __( 'WordPress has its own folder', 'thrg-bunker' ),
             'detail' => $shared
-                ? __( 'WordPress shares a folder with an index.html. If WordPress were ever broken into, your homepage could be rewritten too. See "Even better: give WordPress its own address" below.', 'thrg-bunker' )
+                ? __( 'WordPress shares a folder with an index.html. If WordPress were ever broken into, your homepage could be rewritten too. See "Heads up: Sharing your static web page on WordPress is not recommended" below.', 'thrg-bunker' )
                 : __( 'No index.html was found next to WordPress.', 'thrg-bunker' ),
         );
     }
 
     /**
-     * HackGuard Security detected (informational).
+     * Whether WordPress still answers probes (informational; it never changes anything).
      *
      * @return array<string,string>
      */
-    private static function hackguard() {
-        if ( ! function_exists( 'get_plugins' ) ) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
-        }
-        $found = false;
-        foreach ( get_plugins() as $file => $data ) {
-            if ( isset( $data['Name'] ) && false !== stripos( $data['Name'], 'hackguard' ) && is_plugin_active( $file ) ) {
-                $found = true;
-                break;
-            }
-        }
+    private static function stealth() {
+        $on = THRG_Bunker_Options::active( 'stealth' );
         return array(
-            'id'     => 'hackguard',
-            'status' => 'info',
-            'title'  => __( 'HackGuard Security', 'thrg-bunker' ),
-            'detail' => $found
-                ? __( 'HackGuard Security is active. Bunker and HackGuard can run together; Bunker adds no firewall, scanning or login-attempt rules, so nothing is duplicated.', 'thrg-bunker' )
-                : __( 'HackGuard Security is not active. Bunker does not include a firewall, malware scanning, login-attempt limiting or two-factor; those belong to HackGuard Security.', 'thrg-bunker' ),
+            'id'     => 'stealth',
+            'status' => $on ? 'good' : 'info',
+            'title'  => __( 'WordPress answers like a plain static site', 'thrg-bunker' ),
+            'detail' => $on
+                ? __( 'Probes for WordPress files and folders get a 404.', 'thrg-bunker' )
+                : __( 'WordPress still answers requests such as /wp-login.php and /wp-content/plugins/, so a scanner can confirm it is installed. "Answer 404 to everything WordPress-related" hides that. It is optional and off by default.', 'thrg-bunker' ),
         );
     }
 }

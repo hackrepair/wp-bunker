@@ -40,7 +40,6 @@
 .bunker-text { perspective: 600px; }
 .thrg-bunker .bunker-msg { margin: 6px 0 0 26px; color: var(--ink); transform-origin: top center; transition: transform .15s ease, opacity .15s ease; }
 .bunker-card.is-flipping .bunker-msg { transform: rotateX(90deg); opacity: 0; }
-.bunker-undo { display: inline-block; margin: 4px 0 0 26px; font-size: 13px; }
 .thrg-bunker .bunker-note { margin: 6px 0 0 26px; color: var(--attention); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) {
     .bunker-card, .thrg-bunker .bunker-msg { transition: none; }
@@ -52,14 +51,14 @@
 .bunker-code { background: #f5f7f9; border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; font-size: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
 
 .bunker-checks { list-style: none; margin: 0 0 10px; padding: 0; }
-.bunker-checks li { padding: 8px 10px 8px 26px; position: relative; font-size: 14px; border-bottom: 1px solid var(--line); }
+.bunker-checks li { padding: 8px 10px 8px 64px; position: relative; font-size: 14px; border-bottom: 1px solid var(--line); }
 .bunker-checks li:last-child { border-bottom: 0; }
 .bunker-checks li strong { display: block; }
 .bunker-checks li span { color: var(--ink-soft); }
-.bunker-checks li::before { content: ""; position: absolute; left: 6px; top: 14px; width: 10px; height: 10px; border-radius: 50%; }
-.bunker-checks li.is-good::before { background: var(--ok); }
-.bunker-checks li.is-attention::before { background: var(--attention); }
-.bunker-checks li.is-info::before { background: #6b8296; }
+.bunker-pill { position: absolute; left: 6px; top: 9px; width: 44px; text-align: center; font-size: 11px; font-weight: 700; line-height: 20px; border-radius: 10px; color: #fff; }
+.bunker-checks li.is-good .bunker-pill { background: var(--ok); }
+.bunker-checks li.is-attention .bunker-pill { background: var(--attention); }
+.bunker-checks li.is-info .bunker-pill { background: #6b8296; }
 
 .thrg-bunker .button-primary, .thrg-bunker .button-primary:hover, .thrg-bunker .button-primary:focus { background: var(--orange); border-color: var(--orange-dark); color: #fff; text-shadow: none; box-shadow: none; }
 .thrg-bunker .button-primary:hover { background: var(--orange-dark); }
@@ -72,3 +71,55 @@
     .bunker-head { align-items: flex-start; }
     .bunker-extra { margin-left: 0; }
 }
+.bunker-list { margin: 0 0 8px 18px; list-style: disc; }
+
+/* Left column: status, jump links, Save, one teaser. */
+.thrg-bunker { max-width: 1180px; }
+.bunker-layout { display: flex; align-items: flex-start; gap: 22px; }
+.bunker-main { flex: 1 1 auto; min-width: 0; max-width: 960px; }
+.bunker-rail { flex: 0 0 210px; width: 210px; position: sticky; top: 44px; max-height: calc(100vh - 60px); overflow-y: auto; display: grid; gap: 12px; align-self: flex-start; }
+.bunker-rail-box { background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--orange); border-radius: 6px; padding: 10px 12px; }
+.thrg-bunker .bunker-rail-title { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--orange); }
+.bunker-status { margin: 0; font-size: 13px; }
+.bunker-status { display: grid; grid-template-columns: auto 1fr; gap: 6px 6px; align-items: center; }
+.bunker-status dt { color: var(--ink-soft); margin: 0; }
+.bunker-status dt::after { content: ":"; }
+.bunker-status dd { margin: 0; font-weight: 700; word-break: break-all; }
+.bunker-status dd.is-good { color: var(--ok); }
+.bunker-status dd.is-wait { color: var(--review); }
+.bunker-status dd.is-off { color: var(--ink-soft); }
+.bunker-jump { margin: 0; padding: 0; list-style: none; }
+.bunker-jump a { display: block; padding: 4px 8px; margin: 0 -8px; border-radius: 4px; font-size: 13px; text-decoration: none; color: var(--ink); }
+.bunker-jump a:hover { background: #fff1e6; color: var(--orange-dark); }
+.bunker-rail .bunker-rail-save { width: 100%; text-align: center; }
+.bunker-rail-teaser { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border: 1px dashed var(--orange); border-radius: 6px; background: #fff8f2; color: var(--ink); text-decoration: none; font-size: 13px; }
+.bunker-rail-teaser strong { display: block; color: var(--orange); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.bunker-rail-teaser a { color: var(--orange); font-weight: 600; }
+.bunker-block, .bunker-extra { scroll-margin-top: 48px; }
+@media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+}
+@media (max-width: 1024px) {
+    .bunker-layout { flex-direction: column; gap: 0; }
+    .bunker-rail { position: static; width: 100%; flex-basis: auto; max-height: none; overflow: visible; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 14px; }
+    .bunker-main { width: 100%; }
+}
+
+/* The On | Off switch. */
+.bunker-status dd.bunker-switch { display: inline-flex; font-weight: 400; }
+.bunker-seg { margin: 0; padding: 2px 12px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.bunker-seg.is-on { border-radius: 4px 0 0 4px; }
+.bunker-seg.is-off { border-radius: 0 4px 4px 0; border-left: 0; }
+.bunker-seg.is-on.is-current { background: var(--ok); border-color: var(--ok); color: #fff; }
+.bunker-seg.is-off.is-current { background: #5f6b76; border-color: #5f6b76; color: #fff; }
+.bunker-seg:not(.is-current):hover { background: #fff1e6; color: var(--orange-dark); }
+.bunker-status dd.bunker-switch { flex-wrap: wrap; align-items: center; }
+.bunker-wait { width: 100%; margin-top: 2px; font-size: 11px; font-weight: 400; color: var(--review); }
+.bunker-main.is-paused .bunker-cards { opacity: .55; }
+.thrg-bunker .bunker-section-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; }
+.bunker-myip { font-size: 13px; font-weight: 400; color: var(--ink-soft); }
+.bunker-myip strong { color: var(--ink); font-weight: 700; }
+
+.bunker-pill-inline { position: static; display: inline-block; width: auto; min-width: 40px; padding: 0 8px; margin-right: 8px; vertical-align: middle; letter-spacing: 0; text-transform: none; }
+.bunker-pill-bad { background: var(--attention); }
+.bunker-rail-teaser .bunker-pill-inline { margin: 1px 0 0; flex: 0 0 auto; }

@@ -109,3 +109,56 @@ $GLOBALS['nonce_ok'] = true;
 THRG_Bunker_Settings::take_flash();
 THRG_Bunker_Settings::flash( 'success', 'hello' );
 check( 'flash messages show once', 1 === count( THRG_Bunker_Settings::take_flash() ) && array() === THRG_Bunker_Settings::take_flash() );
+
+// The On | Off switch for Bunker itself.
+$GLOBALS['opts'] = array();
+$_SERVER['REMOTE_ADDR'] = '203.0.113.5';
+$_POST = array( 'state' => 'on' );
+$e = thrg_catch( array( 'THRG_Bunker_Settings', 'handle_master' ) );
+check( 'On acts as the first confirmation', $e && 'redirect' === $e->getMessage() && THRG_Bunker_Options::enforcing() && '203.0.113.5' === THRG_Bunker_Options::state()['ip_list'] );
+$_POST = array( 'state' => 'off' );
+$e = thrg_catch( array( 'THRG_Bunker_Settings', 'handle_master' ) );
+check( 'Off pauses every lockdown and keeps the settings', $e && ! THRG_Bunker_Options::enforcing() && ! THRG_Bunker_Options::active( 'front_end' ) && 1 === THRG_Bunker_Options::state()['confirmed'] && THRG_Bunker_Options::is_on( 'front_end' ) );
+$GLOBALS['hooks'] = array();
+THRG_Bunker_Lockdown::boot();
+check( 'while Off, no enforcement hooks are registered', empty( $GLOBALS['hooks'] ) );
+$_POST = array( 'state' => 'on' );
+$e = thrg_catch( array( 'THRG_Bunker_Settings', 'handle_master' ) );
+check( 'On again resumes with the saved settings', THRG_Bunker_Options::enforcing() && THRG_Bunker_Options::active( 'front_end' ) );
+$GLOBALS['can'] = false;
+$_POST = array( 'state' => 'off' );
+$e = thrg_catch( array( 'THRG_Bunker_Settings', 'handle_master' ) );
+check( 'only an administrator can use the switch', $e && 403 === $e->status && THRG_Bunker_Options::enforcing() );
+$GLOBALS['can']      = true;
+$GLOBALS['nonce_ok'] = false;
+$e = thrg_catch( array( 'THRG_Bunker_Settings', 'handle_master' ) );
+check( 'and it needs a valid nonce', $e && 'bad nonce' === $e->getMessage() && THRG_Bunker_Options::enforcing() );
+$GLOBALS['nonce_ok'] = true;
+
+// The On | Off switch for the IP lock.
+$_POST = array( 'ip_state' => 'off' );
+thrg_catch( array( 'THRG_Bunker_Settings', 'handle_master' ) );
+check( 'the IP lock switch turns the lockdown off', ! THRG_Bunker_Options::is_on( 'ip_lock' ) && THRG_Bunker_Options::enforcing() );
+$_POST = array( 'ip_state' => 'on' );
+thrg_catch( array( 'THRG_Bunker_Settings', 'handle_master' ) );
+check( 'and on again; it waits until the list is saved', THRG_Bunker_Options::is_on( 'ip_lock' ) && THRG_Bunker_Options::pending( 'ip_lock' ) && ! THRG_Bunker_Options::active( 'ip_lock' ) );
+THRG_Bunker_Options::update( array( 'ip_saved' => 1 ) );
+check( 'with a saved list the switch means enforcing', THRG_Bunker_Options::active( 'ip_lock' ) );
+$_POST = array( 'ip_state' => 'bogus' );
+$e = thrg_catch( array( 'THRG_Bunker_Settings', 'handle_master' ) );
+check( 'an unknown value changes nothing', THRG_Bunker_Options::is_on( 'ip_lock' ) && THRG_Bunker_Options::enforcing() );
+
+// The On | Off switch for the hatch link.
+$_POST = array( 'hatch_state' => 'on' );
+$e = thrg_catch( array( 'THRG_Bunker_Settings', 'handle_master' ) );
+check( 'the hatch switch On makes a link and shows it once', $e && 'redirect' === $e->getMessage() && THRG_Bunker_Hatch::enabled() && false !== get_transient( 'thrg_bunker_hatch_show_' . get_current_user_id() ) );
+$v = THRG_Bunker_Options::state()['hatch_version'];
+$_POST = array( 'hatch_state' => 'off' );
+thrg_catch( array( 'THRG_Bunker_Settings', 'handle_master' ) );
+check( 'Off kills the link and signs everyone out', ! THRG_Bunker_Hatch::enabled() && '' === THRG_Bunker_Options::state()['hatch_hash'] && THRG_Bunker_Options::state()['hatch_version'] > $v );
+check( 'switching the hatch leaves Bunker enforcing', THRG_Bunker_Options::enforcing() );
+$GLOBALS['can'] = false;
+$_POST          = array( 'hatch_state' => 'on' );
+$e              = thrg_catch( array( 'THRG_Bunker_Settings', 'handle_master' ) );
+check( 'only an administrator can switch the hatch', $e && 403 === $e->status && ! THRG_Bunker_Hatch::enabled() );
+$GLOBALS['can'] = true;

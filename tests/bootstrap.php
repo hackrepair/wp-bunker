@@ -40,6 +40,7 @@ $GLOBALS['multisite'] = false;
 $GLOBALS['nonce_ok']  = true;
 $GLOBALS['http']      = 200;
 $GLOBALS['mails']     = array();
+$GLOBALS['cookies']   = array();
 $GLOBALS['is_apache'] = true;
 $is_apache            = true;
 
@@ -68,8 +69,28 @@ class WP_Error {
 function add_action( $h, $cb, $p = 10, $a = 1 ) { $GLOBALS['hooks'][ $h ][] = $cb; }
 function add_filter( $h, $cb, $p = 10, $a = 1 ) { $GLOBALS['hooks'][ $h ][] = $cb; }
 function apply_filters( $h, $v ) { return $v; }
-function do_action( $h ) { if ( 'thrg_bunker_notfound_sent' === $h ) { throw new THRG_Test_Exit( 'notfound' ); } }
+function is_ssl() { return true; }
+function wp_hash( $d ) { return hash_hmac( 'sha256', $d, 'test-salt' ); }
+function wp_kses( $h, $a ) { return $h; }
+function sanitize_email( $e ) { return trim( strip_tags( (string) $e ) ); }
+function is_email( $e ) { return (bool) filter_var( $e, FILTER_VALIDATE_EMAIL ); }
+function do_action( $h ) {
+    $args = func_get_args();
+    array_shift( $args );
+    if ( 'thrg_bunker_notfound_sent' === $h ) {
+        throw new THRG_Test_Exit( 'notfound' );
+    }
+    if ( 'thrg_bunker_hatch_done' === $h ) {
+        $e          = new THRG_Test_Exit( 'hatch_page' );
+        $e->payload = $args;
+        throw $e;
+    }
+    if ( 'thrg_bunker_hatch_cookie' === $h ) {
+        $GLOBALS['cookies'][ $args[0] ] = $args[1];
+    }
+}
 function register_deactivation_hook( $f, $cb ) { $GLOBALS['hooks']['deactivate'][] = $cb; }
+function register_activation_hook( $f, $cb ) { $GLOBALS['hooks']['activate'][] = $cb; }
 function load_plugin_textdomain() { return true; }
 function __( $t ) { return $t; }
 function esc_html__( $t ) { return htmlspecialchars( $t, ENT_QUOTES ); }
@@ -104,13 +125,15 @@ function get_transient( $k ) { return array_key_exists( $k, $GLOBALS['transient'
 function set_transient( $k, $v, $t = 0 ) { $GLOBALS['transient'][ $k ] = $v; return true; }
 function delete_transient( $k ) { unset( $GLOBALS['transient'][ $k ] ); return true; }
 function wp_upload_dir( $t = null, $c = true ) { return array( 'basedir' => ABSPATH . 'wp-content/uploads' ); }
+function wp_parse_url( $u, $c = -1 ) { return parse_url( $u, $c ); }
 function home_url( $p = '' ) { return 'https://example.test' . $p; }
 function site_url( $p = '' ) { return 'https://example.test/' . ltrim( $p, '/' ); }
 function wp_login_url() { return 'https://example.test/wp-login.php'; }
 function wp_remote_get( $u, $a = array() ) { return $GLOBALS['http'] instanceof WP_Error ? $GLOBALS['http'] : array( 'response' => array( 'code' => $GLOBALS['http'] ) ); }
 function wp_remote_retrieve_response_code( $r ) { return $r['response']['code']; }
-function wp_mail( $to, $subject, $body ) { $GLOBALS['mails'][] = array( $to, $subject, $body ); return true; }
+function wp_mail( $to, $subject, $body ) { if ( isset( $GLOBALS['mail_ok'] ) && ! $GLOBALS['mail_ok'] ) { return false; } $GLOBALS['mails'][] = array( $to, $subject, $body ); return true; }
 function get_bloginfo( $k ) { return 'Test Site'; }
+function wp_get_current_user() { return isset( $GLOBALS['current_user_obj'] ) ? $GLOBALS['current_user_obj'] : (object) array( 'ID' => 0, 'user_email' => '' ); }
 function wp_specialchars_decode( $t ) { return $t; }
 function human_time_diff( $a, $b = 0 ) { return 'a while'; }
 function wp_die( $message = '', $title = '', $args = array() ) {

@@ -26,6 +26,7 @@ final class THRG_Bunker_Settings {
         add_action( 'admin_notices', array( __CLASS__, 'notices' ) );
         add_action( 'wp_ajax_thrg_bunker_toggle', array( __CLASS__, 'ajax_toggle' ) );
         add_action( 'admin_post_thrg_bunker_confirm', array( __CLASS__, 'handle_confirm' ) );
+        add_action( 'admin_post_thrg_bunker_master', array( __CLASS__, 'handle_master' ) );
         add_action( 'admin_post_thrg_bunker_save', array( __CLASS__, 'handle_save' ) );
         add_filter( 'plugin_action_links_' . plugin_basename( THRG_BUNKER_FILE ), array( __CLASS__, 'action_links' ) );
     }
@@ -101,8 +102,7 @@ final class THRG_Bunker_Settings {
                 'ajaxUrl' => admin_url( 'admin-ajax.php' ),
                 'nonce'   => wp_create_nonce( 'thrg_bunker' ),
                 'error'   => __( 'That change could not be saved. Please reload the page and try again.', 'thrg-bunker' ),
-                'undo'    => __( 'Undo', 'thrg-bunker' ),
-                'turnOn'  => __( 'Turn on', 'thrg-bunker' ),
+                'copied'  => __( 'Hatch link copied.', 'thrg-bunker' ),
             )
         );
     }
@@ -219,29 +219,110 @@ final class THRG_Bunker_Settings {
         }
         $decision = isset( $_POST['decision'] ) ? sanitize_key( wp_unslash( $_POST['decision'] ) ) : '';
         if ( 'lock' === $decision ) {
-            $state   = THRG_Bunker_Options::state();
-            $changes = array(
-                'confirmed' => 1,
-                'declined'  => 0,
-            );
-            if ( '' === trim( (string) $state['ip_list'] ) ) {
-                $detected = THRG_Bunker_Ip::detect( (string) $state['ip_proxy'] );
-                if ( '' !== $detected['ip'] ) {
-                    $changes['ip_list'] = $detected['ip'];
-                }
-            }
-            THRG_Bunker_Options::update( $changes );
-            update_option( THRG_Bunker_Cron::SINCE, time(), false );
-            foreach ( THRG_Bunker_Server_Rules::sync() as $note ) {
-                self::flash( 'warning', $note );
-            }
-            self::flash( 'success', __( 'Bunker is on. Review your IP list below: the login lock starts only after you save it.', 'thrg-bunker' ) );
+            self::lock_it_down();
         } else {
             THRG_Bunker_Options::update( array( 'declined' => 1 ) );
             self::flash( 'warning', __( 'Nothing is enforced yet. You can still choose your options; they take effect when you lock it down.', 'thrg-bunker' ) );
         }
         wp_safe_redirect( self::url() );
         exit;
+    }
+
+    /**
+     * First confirmation: switch Bunker on, and pre-fill the IP list with the administrator's address.
+     *
+     * @return void
+     */
+    private static function lock_it_down() {
+        $state   = THRG_Bunker_Options::state();
+        $changes = array(
+            'confirmed' => 1,
+            'declined'  => 0,
+            'paused'    => 0,
+        );
+        if ( '' === trim( (string) $state['ip_list'] ) ) {
+            $detected = THRG_Bunker_Ip::detect( (string) $state['ip_proxy'] );
+            if ( '' !== $detected['ip'] ) {
+                $changes['ip_list'] = $detected['ip'];
+            }
+        }
+        THRG_Bunker_Options::update( $changes );
+        if ( ! get_option( THRG_Bunker_Cron::SINCE, 0 ) || empty( $state['confirmed'] ) ) {
+            update_option( THRG_Bunker_Cron::SINCE, time(), false );
+        }
+        foreach ( THRG_Bunker_Server_Rules::sync() as $note ) {
+            self::flash( 'warning', $note );
+        }
+        self::flash( 'success', __( 'Bunker is on. Review your IP list below: the login lock starts only after you save it.', 'thrg-bunker' ) );
+    }
+
+    /**
+     * The On | Off switch in the left column.
+     *
+     * Off pauses every lockdown and removes the rules Bunker wrote to .htaccess; the settings are kept.
+     * On switches everything back on (and acts as the first confirmation if there has not been one).
+     * The Hatch link switch kills the link in one click (Off) or makes a fresh one, shown once (On).
+     *
+     * @return void
+     */
+    public static function handle_master() {
+        check_admin_referer( 'thrg_bunker_master' );
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'You are not allowed to do this.', 'thrg-bunker' ), '', array( 'response' => 403 ) );
+        }
+        $want  = isset( $_POST['state'] ) ? sanitize_key( wp_unslash( $_POST['state'] ) ) : '';
+        $ip    = isset( $_POST['ip_state'] ) ? sanitize_key( wp_unslash( $_POST['ip_state'] ) ) : '';
+        $hatch = isset( $_POST['hatch_state'] ) ? sanitize_key( wp_unslash( $_POST['hatch_state'] ) ) : '';
+        $state = THRG_Bunker_Options::state();
+        if ( in_array( $hatch, array( 'on', 'off' ), true ) ) {
+            if ( 'off' === $hatch ) {
+                THRG_Bunker_Hatch::disable();
+                self::flash( 'success', __( 'The hatch is off. The old link and every approved browser stopped working.', 'thrg-bunker' ) );
+            } else {
+                THRG_Bunker_Hatch::create_and_show();
+                wp_safe_redirect( self::url() . '#bunker-hatch' );
+                exit;
+            }
+        } elseif ( in_array( $ip, array( 'on', 'off' ), true ) ) {
+            self::switch_ip_lock( 'on' === $ip );
+        } elseif ( 'on' === $want ) {
+            if ( empty( $state['confirmed'] ) ) {
+                self::lock_it_down();
+            } else {
+                THRG_Bunker_Options::update( array( 'paused' => 0 ) );
+                foreach ( THRG_Bunker_Server_Rules::sync() as $note ) {
+                    self::flash( 'warning', $note );
+                }
+                self::flash( 'success', __( 'Bunker is on again with your saved settings.', 'thrg-bunker' ) );
+            }
+        } elseif ( 'off' === $want ) {
+            THRG_Bunker_Options::update( array( 'paused' => 1 ) );
+            THRG_Bunker_Server_Rules::sync();
+            self::flash( 'warning', __( 'Bunker is off. Every lockdown is paused and its rules were removed from .htaccess. Your settings are kept; switch it on to use them again.', 'thrg-bunker' ) );
+        }
+        wp_safe_redirect( self::url() );
+        exit;
+    }
+
+    /**
+     * The IP lock's On | Off switch: the same as ticking its checkbox.
+     *
+     * @param bool $on New state.
+     * @return void
+     */
+    private static function switch_ip_lock( $on ) {
+        THRG_Bunker_Options::set( 'ip_lock', $on );
+        foreach ( THRG_Bunker_Server_Rules::sync() as $note ) {
+            self::flash( 'warning', $note );
+        }
+        if ( ! $on ) {
+            $registry = THRG_Bunker_Options::registry();
+            self::flash( 'warning', $registry['ip_lock']['off'] );
+        } elseif ( THRG_Bunker_Options::pending( 'ip_lock' ) ) {
+            self::flash( 'success', __( 'The IP lock is on. It starts only after you save your IP list.', 'thrg-bunker' ) );
+        } else {
+            self::flash( 'success', __( 'The IP lock is on.', 'thrg-bunker' ) );
+        }
     }
 
     /**
@@ -413,6 +494,10 @@ final class THRG_Bunker_Settings {
             echo esc_html__( 'It is installed but enforces nothing here.', 'thrg-bunker' ) . '</p></div>';
         }
         $state = THRG_Bunker_Options::state();
+        if ( $here && 'settings_page_' . self::PAGE !== $id && ! empty( $state['confirmed'] ) && ! empty( $state['paused'] ) && ! is_multisite() ) {
+            echo '<div class="notice notice-warning"><p><strong>' . esc_html__( 'Bunker is switched off.', 'thrg-bunker' ) . '</strong> ';
+            echo '<a href="' . esc_url( self::url() ) . '">' . esc_html__( 'Switch it on', 'thrg-bunker' ) . '</a></p></div>';
+        }
         if ( $here && 'settings_page_' . self::PAGE !== $id && empty( $state['confirmed'] ) && ! is_multisite() ) {
             echo '<div class="notice notice-warning"><p><strong>' . esc_html__( 'Bunker is installed but not protecting this site yet.', 'thrg-bunker' ) . '</strong> ';
             echo '<a href="' . esc_url( self::url() ) . '">' . esc_html__( 'Review and lock it down', 'thrg-bunker' ) . '</a></p></div>';

@@ -50,3 +50,14 @@ file_put_contents( ABSPATH . '.htaccess', "# BEGIN THRG Bunker\nrule\n# END THRG
 thrg_bunker_deactivate();
 check( 'deactivation removes the .htaccess rules', false === strpos( file_get_contents( ABSPATH . '.htaccess' ), 'THRG Bunker' ) );
 check( 'deactivation keeps the settings', 1 === THRG_Bunker_Options::state()['confirmed'] && array() === THRG_Bunker_Options::state()['server_rules'] );
+
+// Deactivation switches everything off, kills the hatch link and keeps the data.
+THRG_Bunker_Options::update( array( 'confirmed' => 1, 'paused' => 0, 'ip_list' => '203.0.113.5', 'delete_data' => 0 ) );
+$token = THRG_Bunker_Hatch::create();
+check( 'the hatch link is on before deactivation', THRG_Bunker_Hatch::enabled() );
+thrg_bunker_deactivate();
+$after = THRG_Bunker_Options::state();
+check( 'deactivation leaves Bunker switched off', 1 === $after['paused'] && ! THRG_Bunker_Options::enforcing() );
+check( 'deactivation kills the hatch link', ! THRG_Bunker_Hatch::enabled() && '' === $after['hatch_hash'] );
+check( 'deactivation never deletes the data', '203.0.113.5' === $after['ip_list'] && 1 === $after['confirmed'] );
+check( 'and the data option is still there', false !== get_option( THRG_Bunker_Options::OPTION, false ) );

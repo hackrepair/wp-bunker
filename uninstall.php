@@ -27,7 +27,7 @@ if ( ! function_exists( 'thrg_bunker_uninstall_site' ) ) {
         if ( ! is_array( $state ) || empty( $state['delete_data'] ) ) {
             return false;
         }
-        foreach ( array( 'thrg_bunker_state', 'thrg_bunker_cron_last', 'thrg_bunker_cron_since' ) as $name ) {
+        foreach ( array( 'thrg_bunker_state', 'thrg_bunker_cron_last', 'thrg_bunker_cron_since', 'thrg_bunker_hatch_request', 'thrg_bunker_hatch_log' ) as $name ) {
             delete_option( $name );
         }
         foreach ( array( 'thrg_bunker_cron_check', 'thrg_bunker_cron_mailed' ) as $name ) {

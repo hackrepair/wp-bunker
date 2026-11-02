@@ -9,7 +9,7 @@ $root     = ABSPATH . '.htaccess';
 $existing = "# BEGIN WordPress\nx\n# END WordPress\n";
 $with     = $existing . "\n# BEGIN THRG Bunker\nrule\n# END THRG Bunker\n";
 
-$all = array( 'thrg_bunker_state' => array( 'delete_data' => 0 ), 'thrg_bunker_cron_last' => 1, 'thrg_bunker_cron_since' => 1, 'other' => 1 );
+$all = array( 'thrg_bunker_state' => array( 'delete_data' => 0 ), 'thrg_bunker_cron_last' => 1, 'thrg_bunker_cron_since' => 1, 'thrg_bunker_hatch_request' => 1, 'thrg_bunker_hatch_log' => 1, 'other' => 1 );
 
 // Data kept.
 file_put_contents( $root, $with );

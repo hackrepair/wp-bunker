@@ -63,7 +63,7 @@ final class THRG_Bunker_Cron {
     }
 
     /**
-     * The ready-to-paste cPanel cron line.
+     * The ready-to-paste cron line.
      *
      * @return string
      */
@@ -91,15 +91,12 @@ final class THRG_Bunker_Cron {
             return;
         }
         set_transient( 'thrg_bunker_cron_mailed', 1, WEEK_IN_SECONDS );
-        $subject = sprintf(
-            /* translators: %s: site name. */
-            __( '[%s] WordPress scheduled tasks have stalled', 'thrg-bunker' ),
-            wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES )
-        );
-        $body  = __( 'WordPress has not run its scheduled tasks for more than 24 hours. Automatic updates may have stopped.', 'thrg-bunker' ) . "\n\n";
-        $body .= __( 'To fix it, add this cron job in cPanel:', 'thrg-bunker' ) . "\n" . self::cron_line() . "\n\n";
-        $body .= __( 'Then add this line to wp-config.php:', 'thrg-bunker' ) . "\n" . self::config_line() . "\n\n";
-        $body .= __( 'Sent by The Hack Repair Guy\'s Bunker. You can turn this email off on the Bunker settings page.', 'thrg-bunker' ) . "\n";
+        $subject = THRG_Bunker_Mail::subject( __( 'Scheduled tasks stalled', 'thrg-bunker' ) );
+        $body    = __( 'WordPress has not run its scheduled tasks for more than 24 hours. Automatic updates may have stopped.', 'thrg-bunker' ) . "\n\n";
+        $body   .= THRG_Bunker_Mail::site_line();
+        $body   .= __( 'To fix it, add this cron job in your hosting control panel:', 'thrg-bunker' ) . "\n" . self::cron_line() . "\n\n";
+        $body   .= __( 'Then add this line to wp-config.php:', 'thrg-bunker' ) . "\n" . self::config_line() . "\n\n";
+        $body   .= __( 'Sent by The Hack Repair Guy\'s Bunker. You can turn this email off on the Bunker settings page.', 'thrg-bunker' ) . "\n";
         wp_mail( get_option( 'admin_email' ), $subject, $body );
     }
 }

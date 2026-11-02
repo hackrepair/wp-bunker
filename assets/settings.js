@@ -30,15 +30,11 @@
     }
 
     function render( card, data ) {
-        var undo = card.querySelector( '.bunker-undo' );
         var check = card.querySelector( '.bunker-check' );
         var good = data.on && ! data.pending;
         check.checked = !! data.on;
         card.classList.toggle( 'is-on', good );
         card.classList.toggle( 'is-off', ! good );
-        if ( undo ) {
-            undo.hidden = good;
-        }
         setText( card, data.text );
         announce( data.message ? data.message + ' ' + data.text : data.text );
         if ( data.message ) {
@@ -83,16 +79,25 @@
 
     document.querySelectorAll( '.bunker-card' ).forEach( function ( card ) {
         var checkbox = card.querySelector( '.bunker-check' );
-        var undo = card.querySelector( '.bunker-undo' );
         checkbox.addEventListener( 'change', function () {
             save( card, checkbox );
         } );
-        if ( undo ) {
-            undo.addEventListener( 'click', function ( event ) {
-                event.preventDefault();
-                checkbox.checked = ! checkbox.checked;
-                save( card, checkbox );
-            } );
-        }
+    } );
+
+    document.querySelectorAll( '.bunker-copy' ).forEach( function ( button ) {
+        button.addEventListener( 'click', function () {
+            var field = document.getElementById( button.getAttribute( 'data-target' ) );
+            if ( ! field ) {
+                return;
+            }
+            field.focus();
+            field.select();
+            if ( window.navigator.clipboard && window.navigator.clipboard.writeText ) {
+                window.navigator.clipboard.writeText( field.value );
+            } else {
+                document.execCommand( 'copy' );
+            }
+            announce( config.copied || 'Copied.' );
+        } );
     } );
 }() );

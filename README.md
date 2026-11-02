@@ -8,7 +8,7 @@
 
 If your public website is static HTML (often built and updated by AI) and WordPress only sits behind it for contact forms, mailing-list sign-ups, a chat backend or a database, most of WordPress is unused, yet bots still probe all of it. Bunker switches off everything a utility install does not need, and keeps the few doors your static site actually uses.
 
-Current version: **0.1.0** (development build; no release yet).
+Current version: **1.2.0**.
 
 ## The rule that shapes everything
 
@@ -16,7 +16,7 @@ Current version: **0.1.0** (development build; no release yet).
 
 ## What it does
 
-**Settings → Bunker** has one checkbox per lockdown. Each saves the moment you change it. Untick one and its description flips to say what just happened, the card turns amber, and an Undo link appears. Every lockdown is on by default, except the optional one at the end.
+**Settings → Bunker** has one checkbox per lockdown. Each saves the moment you change it. Untick one and its description flips to say what just happened, and the card turns amber. Every lockdown is on by default, except the two optional ones at the end.
 
 1. Hide the WordPress front end (visitors and bots get a plain 404)
 2. Block XML-RPC
@@ -29,30 +29,48 @@ Current version: **0.1.0** (development build; no release yet).
 9. Turn off the built-in code editors
 10. Hide version files, logs and folder listings (`.htaccess` rules)
 11. Block PHP in the uploads folder (`.htaccess` rules)
-12. Watch WordPress's scheduled tasks and warn when they stall, with the cPanel cron line that fixes it
+12. Watch WordPress's scheduled tasks and warn when they stall, with the cron line that fixes it
 13. Optional, off by default: only allow the form actions you list for logged-out visitors
+14. Optional, off by default: answer 404 to everything WordPress-related. It hides WordPress; it does not protect it
 
-Below the options: read-only **review checks** (an `admin` account, unused plugins and themes, debug mode, an `error_log` in the web folder, WordPress sharing a folder with `index.html`, HackGuard Security detected) and an **Even better: give WordPress its own address** panel.
+Below the options: the **Hatch link** (see below), your site's **404 page** setting, read-only **review checks** (an `admin` account, unused plugins and themes, debug mode, an `error_log` in the web folder, WordPress sharing a folder with `index.html`, and whether item 14 is on), and a "Sharing your static web page on WordPress is not recommended" panel that explains moving WordPress to its own address.
+
+### Left column
+
+A light column beside the settings shows the status at a glance, with **On | Off** switches for Bunker itself, the IP lock and the hatch link. It also has jump links, a pinned **Save changes** button and one warning card. Switching Bunker **Off** pauses every lockdown and removes Bunker's rules from `.htaccess`; your settings are kept. It stacks above the page on narrow screens.
+
+### Hatch link (spare key)
+
+The IP lock is the normal way in. If your address changes, the hatch link is a way back: opening it emails the administrator, and nothing happens until someone presses **Approve** on the confirmation page behind that email link. Approval lets the browser that asked, not the one that clicked, through for 1, 4, 12 or 24 hours. Making a new link or switching the hatch off ends every approved browser at once. Only a hash of the link is stored, and it is shown once. At most one approval email is sent a minute and five an hour. If the email cannot be sent, the hatch stays shut.
 
 ## Nothing happens until you say so
 
 The first time the page opens, Bunker asks *"Is that how this site works?"* and enforces nothing until you choose **Lock it down**. The IP lock has a second step: it starts only after you have reviewed and saved your list. Bunker's own **404 page** uses your site's `404.html` when there is one.
 
+## Emails
+
+Bunker sends only three kinds of email, with subjects in the THRG format `[domain] [Bunker] Purpose`:
+
+- **Welcome**, once, to the administrator who first activates the plugin. It says nothing is locked yet, what Bunker is for, the next step and how to recover from a lockout.
+- **Approve or deny a hatch request**, each time a visitor outside your IP list opens the hatch link.
+- **Scheduled tasks stalled**, optional and off by default, at most once a week.
+
 ## Safe and recoverable
 
-- Anything that could lock you out is enforced in PHP. Renaming the plugin folder in cPanel File Manager removes it at once.
+- Anything that could lock you out is enforced in PHP. Renaming the plugin folder in File Manager removes it at once.
 - `define( 'THRG_BUNKER_SAFE_MODE', true );` in `wp-config.php` pauses every lockdown and removes the server rules until you take the line out.
-- Server rules sit between `# BEGIN THRG Bunker` and `# END THRG Bunker`. They are written atomically after a backup, checked with a loopback request, and rolled back if the site starts returning server errors. Deactivating or deleting the plugin removes them. On Nginx the rules are shown to copy.
-- Multisite is not supported in 1.0.
+- Server rules sit between `# BEGIN THRG Bunker` and `# END THRG Bunker`. They are written atomically after a backup, checked with a loopback request, and rolled back if the site starts returning server errors. On Nginx the rules are shown to copy.
+- **Deactivating** Bunker switches everything off: the rules are removed, the hatch link is killed and Bunker is left paused. Your settings are kept, so after you activate it again you switch Bunker **On** when you are ready. Settings are deleted only when you delete the plugin with **Delete all plugin data** ticked.
+- Multisite is not supported yet; Bunker enforces nothing there.
 
 ## Not in scope
 
-A firewall, malware scanning, login-attempt limiting, two-factor and visitor logging belong to HackGuard Security. Bunker detects HackGuard and the two run side by side without duplicate rules.
+Bunker is not a firewall, malware scanner, login-attempt limiter or two-factor plugin, and it does not log visitors.
 
 ## Development
 
 - PHP 7.4 or newer. Avoid PHP 8-only functions.
-- Tests are standalone PHP scripts in `tests/`; run each with `php tests/<name>.php`.
+- Tests are standalone PHP scripts in `tests/`; run each with `php tests/<name>.php`. `tests/mailpit.php` is not a test: it sends Bunker's three emails to a local Mailpit for a visual check.
 - Run the shared PHPCS before committing PHP changes: `/Volumes/BACKUP8TB2/plugins/PHPCS/run-phpcs.sh "$PWD"`.
 - `python3 scripts/build-release.py` builds `dist/thrg-bunker.X.Y.Z.zip` with a single top-level `thrg-bunker/` folder. `PROJECT.md`, `README.md`, `tests/` and `.gitignore` are kept out of the zip.
 

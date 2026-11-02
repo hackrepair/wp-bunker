@@ -62,6 +62,10 @@ final class THRG_Bunker_Lockdown {
         if ( THRG_Bunker_Options::active( 'ip_lock' ) ) {
             add_action( 'login_init', array( __CLASS__, 'ip_gate' ), 0 );
             add_action( 'admin_init', array( __CLASS__, 'ip_gate' ), 0 );
+            if ( THRG_Bunker_Options::active( 'stealth' ) ) {
+                // Earlier than WordPress's own redirect from /wp-admin/ to the login page.
+                add_action( 'init', array( __CLASS__, 'early_gate' ), 0 );
+            }
         }
         if ( THRG_Bunker_Options::active( 'file_editor' ) && ! defined( 'DISALLOW_FILE_EDIT' ) ) {
             // DISALLOW_FILE_MODS is deliberately not offered: it also stops plugin and core updates.
@@ -91,6 +95,9 @@ final class THRG_Bunker_Lockdown {
      */
     public static function xmlrpc() {
         if ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) {
+            if ( THRG_Bunker_Options::active( 'stealth' ) ) {
+                THRG_Bunker_NotFound::send();
+            }
             status_header( 403 );
             exit;
         }
@@ -279,7 +286,21 @@ final class THRG_Bunker_Lockdown {
     }
 
     /**
-     * Item 8: only listed addresses reach the login page and dashboard.
+     * Item 14: run the IP gate before WordPress's own redirect from the dashboard to the login page.
+     *
+     * Only the login page and the dashboard are checked here; the front end is never touched.
+     *
+     * @return void
+     */
+    public static function early_gate() {
+        if ( 'wp-login.php' !== self::current_script() && ! ( defined( 'WP_ADMIN' ) && WP_ADMIN ) ) {
+            return;
+        }
+        self::ip_gate();
+    }
+
+    /**
+     * Item 8: only listed addresses (or a browser the owner approved through the hatch) reach the login page and dashboard.
      *
      * @return void
      */
@@ -289,8 +310,13 @@ final class THRG_Bunker_Lockdown {
         }
         $state    = THRG_Bunker_Options::state();
         $detected = THRG_Bunker_Ip::detect( (string) $state['ip_proxy'] );
-        if ( '' !== $detected['ip'] && THRG_Bunker_Ip::in_list( $detected['ip'], $state['ip_list'] ) ) {
+        $allowed  = '' !== $detected['ip'] && THRG_Bunker_Ip::in_list( $detected['ip'], $state['ip_list'] );
+        THRG_Bunker_Hatch::route( $allowed, self::current_script() );
+        if ( $allowed || THRG_Bunker_Hatch::has_access() ) {
             return;
+        }
+        if ( THRG_Bunker_Options::active( 'stealth' ) ) {
+            THRG_Bunker_NotFound::send();
         }
         wp_die(
             esc_html__( 'Access to this page is limited to approved IP addresses.', 'thrg-bunker' ),

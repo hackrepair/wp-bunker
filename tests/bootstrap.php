@@ -52,18 +52,28 @@ class THRG_Test_Exit extends Exception {
     public $status = 0;
 }
 
-/** Minimal WP_Error. */
+/** Minimal WP_Error (several codes supported). */
 class WP_Error {
     public $code;
     public $message;
     public $data;
+    public $errors = array();
     public function __construct( $code = '', $message = '', $data = '' ) {
         $this->code    = $code;
         $this->message = $message;
         $this->data    = $data;
+        if ( '' !== $code ) {
+            $this->errors[ $code ][] = $message;
+        }
     }
-    public function get_error_code() { return $this->code; }
-    public function get_error_message() { return $this->message; }
+    public function get_error_code() { $codes = array_keys( $this->errors ); return $codes ? $codes[0] : ''; }
+    public function get_error_codes() { return array_keys( $this->errors ); }
+    public function get_error_message( $code = '' ) {
+        $code = '' === $code ? $this->get_error_code() : $code;
+        return isset( $this->errors[ $code ][0] ) ? $this->errors[ $code ][0] : '';
+    }
+    public function add( $code, $message, $data = '' ) { $this->errors[ $code ][] = $message; }
+    public function remove( $code ) { unset( $this->errors[ $code ] ); }
 }
 
 function add_action( $h, $cb, $p = 10, $a = 1 ) { $GLOBALS['hooks'][ $h ][] = $cb; }
@@ -124,12 +134,12 @@ function delete_option( $k ) { unset( $GLOBALS['opts'][ $k ] ); return true; }
 function get_transient( $k ) { return array_key_exists( $k, $GLOBALS['transient'] ) ? $GLOBALS['transient'][ $k ] : false; }
 function set_transient( $k, $v, $t = 0 ) { $GLOBALS['transient'][ $k ] = $v; return true; }
 function delete_transient( $k ) { unset( $GLOBALS['transient'][ $k ] ); return true; }
-function wp_upload_dir( $t = null, $c = true ) { return array( 'basedir' => ABSPATH . 'wp-content/uploads' ); }
+function wp_upload_dir( $t = null, $c = true ) { return array( 'basedir' => ABSPATH . 'wp-content/uploads', 'baseurl' => 'https://example.test/uploads' ); }
 function wp_parse_url( $u, $c = -1 ) { return parse_url( $u, $c ); }
 function home_url( $p = '' ) { return 'https://example.test' . $p; }
 function site_url( $p = '' ) { return 'https://example.test/' . ltrim( $p, '/' ); }
 function wp_login_url() { return 'https://example.test/wp-login.php'; }
-function wp_remote_get( $u, $a = array() ) { return $GLOBALS['http'] instanceof WP_Error ? $GLOBALS['http'] : array( 'response' => array( 'code' => $GLOBALS['http'] ) ); }
+function wp_remote_get( $u, $a = array() ) { if ( isset( $GLOBALS['http_callback'] ) ) { return $GLOBALS['http_callback']( $u, $a ); } return $GLOBALS['http'] instanceof WP_Error ? $GLOBALS['http'] : array( 'response' => array( 'code' => $GLOBALS['http'] ) ); }
 function wp_remote_retrieve_response_code( $r ) { return $r['response']['code']; }
 function wp_mail( $to, $subject, $body ) { if ( isset( $GLOBALS['mail_ok'] ) && ! $GLOBALS['mail_ok'] ) { return false; } $GLOBALS['mails'][] = array( $to, $subject, $body ); return true; }
 function get_bloginfo( $k ) { return 'Test Site'; }
@@ -196,3 +206,5 @@ function thrg_catch( $fn ) {
 function thrg_load_plugin() {
     require __DIR__ . '/../index.php';
 }
+
+function wp_remote_retrieve_body( $r ) { return isset( $r['body'] ) ? $r['body'] : ''; }

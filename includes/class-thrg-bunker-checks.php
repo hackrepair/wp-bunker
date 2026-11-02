@@ -29,7 +29,20 @@ final class THRG_Bunker_Checks {
     }
 
     /**
-     * Whether WordPress shares a folder with the static site's index.html.
+     * The word shown beside a check: Good, Bad or Info.
+     *
+     * @param string $status A check status: good, attention or info.
+     * @return string
+     */
+    public static function label( $status ) {
+        if ( 'good' === $status ) {
+            return __( 'Good', 'thrg-bunker' );
+        }
+        return 'attention' === $status ? __( 'Bad', 'thrg-bunker' ) : __( 'Info', 'thrg-bunker' );
+    }
+
+    /**
+     * Whether WordPress shares a directory with the static site's index.html.
      *
      * @return bool
      */
@@ -122,7 +135,7 @@ final class THRG_Bunker_Checks {
     }
 
     /**
-     * WordPress in the same folder as the static site.
+     * WordPress in the same directory as the static site.
      *
      * @return array<string,string>
      */
@@ -131,9 +144,9 @@ final class THRG_Bunker_Checks {
         return array(
             'id'     => 'shares_folder',
             'status' => $shared ? 'attention' : 'good',
-            'title'  => __( 'WordPress has its own folder', 'thrg-bunker' ),
+            'title'  => __( 'WordPress has its own directory', 'thrg-bunker' ),
             'detail' => $shared
-                ? __( 'WordPress shares a folder with an index.html. If WordPress were ever broken into, your homepage could be rewritten too. See "Heads up: Sharing your static web page on WordPress is not recommended" below.', 'thrg-bunker' )
+                ? __( 'WordPress shares a directory with an index.html. If WordPress were ever broken into, your homepage could be rewritten too. See "Heads up: Sharing your static web page in the same directory as WordPress is not recommended" below.', 'thrg-bunker' )
                 : __( 'No index.html was found next to WordPress.', 'thrg-bunker' ),
         );
     }

@@ -1,10 +1,11 @@
 <?php
 /**
- * Server rules for items 10 and 11, written between marker comments.
+ * Server rules for items 10, 11 and 14, written between marker comments.
  *
  * Apache and LiteSpeed only. On Nginx the rules are shown to copy instead.
  * Writes are atomic, the previous file is backed up first, and a loopback
  * check restores the backup if the site starts returning server errors.
+ * The backup is deleted once the check passes, so no copy is left in the web folder.
  *
  * @package THRG_Bunker
  */
@@ -35,6 +36,22 @@ final class THRG_Bunker_Server_Rules {
      * @return string[]
      */
     public static function lines( $id ) {
+        $lines = self::lockdown_lines( $id );
+        if ( 'version_files' !== $id ) {
+            return $lines;
+        }
+        $state    = THRG_Bunker_Options::state();
+        $redirect = array();
+        if ( THRG_Bunker_Options::enforcing() && ! empty( $state['https_redirect'] ) ) {
+            $host = wp_parse_url( home_url( '/' ), PHP_URL_HOST );
+            if ( is_string( $host ) && preg_match( '/^[a-z0-9.-]+$/iD', $host ) ) {
+                $redirect = array( 'RewriteEngine On', 'RewriteCond %{HTTPS} !=on', 'RewriteCond %{SERVER_PORT} !^443$', 'RewriteRule ^ https://' . $host . '%{REQUEST_URI} [R=308,L,NE]' );
+            }
+        }
+        return array_merge( $redirect, $lines );
+    }
+
+    private static function lockdown_lines( $id ) {
         $deny = array(
             '<IfModule mod_authz_core.c>',
             '    Require all denied',
@@ -45,6 +62,9 @@ final class THRG_Bunker_Server_Rules {
             '</IfModule>',
         );
         if ( 'version_files' === $id ) {
+            if ( ! empty( THRG_Bunker_Options::state()['https_redirect'] ) && ! THRG_Bunker_Options::active( 'version_files' ) && ! THRG_Bunker_Options::active( 'stealth' ) ) {
+                return array();
+            }
             if ( THRG_Bunker_Options::active( 'stealth' ) ) {
                 return self::stealth_lines();
             }
@@ -153,8 +173,21 @@ final class THRG_Bunker_Server_Rules {
      * @return string
      */
     public static function strip( $contents ) {
-        $pattern = '/(?:\r?\n)?' . preg_quote( self::BEGIN, '/' ) . '\r?\n.*?' . preg_quote( self::END, '/' ) . '\r?\n?/s';
-        return (string) preg_replace( $pattern, '', (string) $contents );
+        if ( ! self::valid_markers( $contents ) ) {
+            return $contents;
+        }
+        return (string) preg_replace( self::marker_pattern(), '', (string) $contents );
+    }
+
+    private static function marker_pattern() {
+        return '/^' . preg_quote( self::BEGIN, '/' ) . '\r?\n.*?^' . preg_quote( self::END, '/' ) . '(?:\r?\n|$)/ms';
+    }
+
+    private static function valid_markers( $contents ) {
+        $begins = substr_count( $contents, self::BEGIN );
+        $ends   = substr_count( $contents, self::END );
+        return ( 0 === $begins && 0 === $ends ) ||
+            ( 1 === $begins && 1 === $ends && 1 === preg_match( self::marker_pattern(), $contents ) );
     }
 
     /**
@@ -167,7 +200,10 @@ final class THRG_Bunker_Server_Rules {
     public static function with_block( $contents, array $lines ) {
         $contents = (string) $contents;
         $block    = self::block( $lines );
-        $pattern  = '/' . preg_quote( self::BEGIN, '/' ) . '\r?\n.*?' . preg_quote( self::END, '/' ) . '\r?\n?/s';
+        $pattern  = self::marker_pattern();
+        if ( ! self::valid_markers( $contents ) ) {
+            return $contents;
+        }
         if ( 1 === preg_match( $pattern, $contents ) ) {
             return (string) preg_replace_callback(
                 $pattern,
@@ -179,9 +215,6 @@ final class THRG_Bunker_Server_Rules {
             );
         }
         if ( '' !== $contents && "\n" !== substr( $contents, -1 ) ) {
-            $contents .= "\n";
-        }
-        if ( '' !== $contents ) {
             $contents .= "\n";
         }
         return $contents . $block;
@@ -216,13 +249,20 @@ final class THRG_Bunker_Server_Rules {
             return false;
         }
         $perms = file_exists( $path ) ? ( fileperms( $path ) & 0777 ) : 0644;
-        $temp  = $path . '.thrg-bunker-tmp';
+        $temp  = tempnam( $dir, '.thrg-bunker-' );
+        if ( false === $temp ) {
+            return false;
+        }
         // phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents, WordPress.WP.AlternativeFunctions.file_system_operations_chmod, WordPress.WP.AlternativeFunctions.rename_rename, WordPress.WP.AlternativeFunctions.unlink_unlink -- The atomic write (temp file then rename) is deliberate; WP_Filesystem cannot rename over an existing file atomically.
-        if ( false === file_put_contents( $temp, $contents, LOCK_EX ) ) {
+        // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+        if ( strlen( $contents ) !== file_put_contents( $temp, $contents, LOCK_EX ) ) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+            unlink( $temp );
             return false;
         }
         chmod( $temp, $perms );
         if ( ! rename( $temp, $path ) ) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
             unlink( $temp );
             return false;
         }
@@ -241,12 +281,58 @@ final class THRG_Bunker_Server_Rules {
     }
 
     /**
+     * Delete the backup kept next to a rules file, if there is one.
+     *
+     * @param string $path File path.
+     * @return void
+     */
+    private static function drop_backup( $path ) {
+        $backup = self::backup_path( $path );
+        if ( file_exists( $backup ) ) {
+            unlink( $backup ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Removing Bunker's own local backup file.
+        }
+    }
+
+    /**
      * Add or update one lockdown's rules, then check the site still loads.
      *
      * @param string $id Lockdown id.
      * @return array{ok:bool,message:string}
      */
     public static function apply( $id ) {
+        $path = self::target( $id );
+        if ( '' === $path ) {
+            return array(
+				'ok'      => false,
+				'message' => __( 'Bunker could not lock the server rules file.', 'thrg-bunker' ),
+			);
+        }
+        // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+        $lock = fopen( $path . '.thrg-bunker-lock', 'c' );
+        if ( false === $lock ) {
+            return array(
+				'ok'      => false,
+				'message' => __( 'Bunker could not lock the server rules file.', 'thrg-bunker' ),
+			);
+        }
+        if ( ! flock( $lock, LOCK_EX | LOCK_NB ) ) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+            fclose( $lock );
+            return array(
+				'ok'      => false,
+				'message' => __( 'Bunker could not lock the server rules file.', 'thrg-bunker' ),
+			);
+        }
+        try {
+            return self::apply_locked( $id );
+        } finally {
+            flock( $lock, LOCK_UN );
+            // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+            fclose( $lock );
+        }
+    }
+
+    private static function apply_locked( $id ) {
         $path  = self::target( $id );
         $lines = self::lines( $id );
         if ( '' === $path || ! $lines ) {
@@ -255,7 +341,8 @@ final class THRG_Bunker_Server_Rules {
                 'message' => '',
             );
         }
-        $old = '';
+        $old     = '';
+        $existed = file_exists( $path );
         if ( file_exists( $path ) ) {
             // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a local server-rules file, not a remote URL.
             $old = file_get_contents( $path );
@@ -266,7 +353,18 @@ final class THRG_Bunker_Server_Rules {
                 );
             }
             // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Local backup of the file about to change.
-            file_put_contents( self::backup_path( $path ), $old );
+            if ( file_exists( self::backup_path( $path ) ) || ! self::write_atomic( self::backup_path( $path ), $old ) ) {
+                return array(
+					'ok'      => false,
+					'message' => __( 'Bunker could not create a fresh backup. Preserve or restore the existing backup before retrying.', 'thrg-bunker' ),
+				);
+            }
+        }
+        if ( ! self::valid_markers( $old ) ) {
+            return array(
+				'ok'      => false,
+				'message' => __( 'Bunker found incomplete or ambiguous rule markers. Review the file before retrying.', 'thrg-bunker' ),
+			);
         }
         if ( ! self::write_atomic( $path, self::with_block( $old, $lines ) ) ) {
             return array(
@@ -274,16 +372,34 @@ final class THRG_Bunker_Server_Rules {
                 'message' => __( 'Bunker could not write the server rules file, so nothing was changed.', 'thrg-bunker' ),
             );
         }
-        if ( 'fail' === self::check_site() ) {
-            self::write_atomic( $path, $old );
+        $check = self::check_site();
+        if ( 'fail' !== $check && 'uploads_php' === $id ) {
+            $uploads_check = self::check_uploads();
+            $check         = 'ok' === $check ? $uploads_check : ( 'fail' === $uploads_check ? 'fail' : 'unknown' );
+        }
+        if ( 'fail' === $check ) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+            $restored = $existed ? self::write_atomic( $path, $old ) : unlink( $path );
+            if ( ! $restored ) {
+                return array(
+					'ok'      => false,
+					/* translators: %s: server rules file path requiring manual recovery. */
+                    'message' => sprintf( __( 'Rollback failed. Restore the retained backup for %s manually.', 'thrg-bunker' ), $path ),
+				);
+            }
+            self::drop_backup( $path );
             return array(
                 'ok'      => false,
                 'message' => __( 'Your server returned an error after the rules were added, so Bunker put your previous file back. This option has been left off.', 'thrg-bunker' ),
             );
         }
+        if ( 'ok' === $check ) {
+            // The site answered, so the backup is no longer needed. An inconclusive check keeps it for a manual rollback.
+            self::drop_backup( $path );
+        }
         return array(
             'ok'      => true,
-            'message' => '',
+            'message' => 'unknown' === $check ? __( 'The server check was inconclusive. Keep the retained backup until the affected pages are verified.', 'thrg-bunker' ) : '',
         );
     }
 
@@ -295,15 +411,49 @@ final class THRG_Bunker_Server_Rules {
      */
     public static function remove( $id ) {
         $path = self::target( $id );
-        if ( '' === $path || ! is_readable( $path ) ) {
+        if ( '' === $path ) {
+            return false;
+        }
+        // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+        $lock = fopen( $path . '.thrg-bunker-lock', 'c' );
+        if ( false === $lock ) {
+            return false;
+        }
+        if ( ! flock( $lock, LOCK_EX | LOCK_NB ) ) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+            fclose( $lock );
+            return false;
+        }
+        try {
+            return self::remove_locked( $id );
+        } finally {
+            flock( $lock, LOCK_UN );
+            // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+            fclose( $lock );
+        }
+    }
+
+    private static function remove_locked( $id ) {
+        $path = self::target( $id );
+        if ( '' === $path ) {
             return true;
+        }
+        if ( ! file_exists( $path ) ) {
+            return true;
+        }
+        if ( ! is_readable( $path ) ) {
+            return false;
         }
         // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a local server-rules file, not a remote URL.
         $old = file_get_contents( $path );
         if ( false === $old || false === strpos( $old, self::BEGIN ) ) {
             return true;
         }
-        return self::write_atomic( $path, self::strip( $old ) );
+        if ( ! self::valid_markers( $old ) || ! self::write_atomic( $path, self::strip( $old ) ) ) {
+            return false;
+        }
+        self::drop_backup( $path );
+        return true;
     }
 
     /**
@@ -345,6 +495,47 @@ final class THRG_Bunker_Server_Rules {
     }
 
     /**
+     * Verify a unique static resource below the uploads rules.
+     */
+    private static function check_uploads() {
+        $uploads = wp_upload_dir( null, false );
+        if ( empty( $uploads['basedir'] ) || empty( $uploads['baseurl'] ) ) {
+            return 'unknown';
+        }
+        $name = 'bunker-check-' . bin2hex( random_bytes( 16 ) ) . '.txt';
+        $body = bin2hex( random_bytes( 24 ) );
+        $path = rtrim( $uploads['basedir'], '/\\' ) . '/' . $name;
+        // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+        if ( strlen( $body ) !== file_put_contents( $path, $body ) ) {
+            if ( file_exists( $path ) ) {
+                // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+                unlink( $path );
+            }
+            return 'unknown';
+        }
+        try {
+            $response = wp_remote_get(
+                rtrim( $uploads['baseurl'], '/' ) . '/' . $name,
+                array(
+					'timeout'     => 8,
+					'redirection' => 0,
+                )
+            );
+            if ( is_wp_error( $response ) ) {
+                return 'unknown';
+            }
+            $code = (int) wp_remote_retrieve_response_code( $response );
+            if ( $code >= 500 ) {
+                return 'fail';
+            }
+            return 200 === $code && wp_remote_retrieve_body( $response ) === $body ? 'ok' : 'unknown';
+        } finally {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+            unlink( $path );
+        }
+    }
+
+    /**
      * Bring the files in line with what should be enforced now.
      *
      * Called after confirmation, after a toggle, and on admin page loads. Safe
@@ -365,23 +556,35 @@ final class THRG_Bunker_Server_Rules {
             $want = THRG_Bunker_Options::active( $id );
             if ( 'version_files' === $id && ! $want ) {
                 // Item 14 shares this file and brings its own rules.
-                $want = THRG_Bunker_Options::active( 'stealth' );
+                $want = THRG_Bunker_Options::active( 'stealth' ) || ( THRG_Bunker_Options::enforcing() && ! empty( $state['https_redirect'] ) );
             }
-            $sig = $want ? md5( implode( "\n", self::lines( $id ) ) ) : '';
-            $had = ! empty( $recorded[ $id ] );
-            if ( $want && ( ! $had || (string) $recorded[ $id ] !== $sig ) ) {
+            $sig  = $want ? md5( implode( "\n", self::lines( $id ) ) ) : '';
+            $had  = ! empty( $recorded[ $id ] );
+            $path = self::target( $id );
+            $live = self::present( $path );
+            // A block that was taken out by hand or by another tool is put back; a stray block nobody asked for is removed.
+            if ( $want && ( ! $had || ! $live || (string) $recorded[ $id ] !== $sig ) ) {
                 $result = self::apply( $id );
                 if ( $result['ok'] ) {
+                    if ( '' !== $result['message'] ) {
+                        $messages[] = $result['message'];
+                    }
                     $recorded[ $id ] = $sig;
                 } else {
+                    if ( 'version_files' === $id ) {
+                        THRG_Bunker_Options::update( array( 'https_redirect' => 0 ) );
+                    }
                     THRG_Bunker_Options::set( 'version_files' === $id && THRG_Bunker_Options::active( 'stealth' ) ? 'stealth' : $id, false );
                     if ( '' !== $result['message'] ) {
                         $messages[] = $result['message'];
                     }
                 }
                 $changed = true;
-            } elseif ( ! $want && $had ) {
-                self::remove( $id );
+            } elseif ( ! $want && ( $had || $live ) ) {
+                if ( ! self::remove( $id ) ) {
+                    $messages[] = __( 'Bunker could not remove its server rules. Check file permissions and retained backups.', 'thrg-bunker' );
+                    continue;
+                }
                 unset( $recorded[ $id ] );
                 $changed = true;
             }

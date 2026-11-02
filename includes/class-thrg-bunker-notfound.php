@@ -47,11 +47,11 @@ final class THRG_Bunker_NotFound {
      * @return string
      */
     public static function builtin_html() {
-        $mascot = plugins_url( 'assets/brand/thrg-heart-128.png', THRG_BUNKER_FILE );
-        $html   = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>' . esc_html__( 'Page not found', 'thrg-bunker' ) . '</title>';
-        $html  .= '<style>body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f5f7f9;color:#18354b;display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center}main{padding:24px}img{width:96px;height:96px}h1{font-size:28px;margin:16px 0 8px}p{margin:0;color:#4f6577}</style></head><body><main>';
-        $html  .= '<img src="' . esc_url( $mascot ) . '" alt="" width="96" height="96">';
-        $html  .= '<h1>' . esc_html__( 'Page not found', 'thrg-bunker' ) . '</h1><p>' . esc_html__( 'The page you are looking for is not here.', 'thrg-bunker' ) . '</p></main></body></html>';
+
+        $html  = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>' . esc_html__( 'Page not found', 'thrg-bunker' ) . '</title>';
+        $html .= '<style>body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f5f7f9;color:#18354b;display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center}main{padding:24px}img{width:96px;height:96px}h1{font-size:28px;margin:16px 0 8px}p{margin:0;color:#4f6577}</style></head><body><main>';
+
+        $html .= '<h1>' . esc_html__( 'Page not found', 'thrg-bunker' ) . '</h1><p>' . esc_html__( 'The page you are looking for is not here.', 'thrg-bunker' ) . '</p></main></body></html>';
         return $html;
     }
 

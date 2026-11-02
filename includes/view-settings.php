@@ -19,6 +19,11 @@ $thrg_flash     = THRG_Bunker_Settings::take_flash();
 $thrg_file404   = THRG_Bunker_NotFound::find_file();
 $thrg_cron_last = (int) get_option( THRG_Bunker_Cron::LAST, 0 );
 $thrg_help_url  = (string) apply_filters( 'thrg_bunker_help_url', 'https://hackrepair.com/' );
+$thrg_shared    = THRG_Bunker_Checks::shares_folder_with_static_site();
+$thrg_bad_pill  = '<b class="bunker-pill bunker-pill-inline bunker-pill-bad">' . esc_html__( 'Bad', 'thrg-bunker' ) . '</b>';
+$thrg_pill_tags = array(
+    'b' => array( 'class' => array() ),
+);
 
 $thrg_rail_switch = false;
 if ( THRG_Bunker_Options::safe_mode() ) {
@@ -38,7 +43,7 @@ $thrg_rail_links      = array(
     'bunker-hatch'     => __( 'Hatch link', 'thrg-bunker' ),
     'bunker-404'       => __( '404 page', 'thrg-bunker' ),
     'bunker-checks'    => __( 'Review checks', 'thrg-bunker' ),
-    'bunker-better'    => __( 'Own address', 'thrg-bunker' ),
+    'bunker-better'    => __( 'Same directory', 'thrg-bunker' ),
 );
 ?>
 <div class="wrap thrg-bunker">
@@ -89,10 +94,12 @@ $thrg_rail_links      = array(
         <div class="bunker-rail-box">
             <button type="submit" form="bunker-form" name="save_section" value="general" class="button button-primary bunker-rail-save"><?php esc_html_e( 'Save changes', 'thrg-bunker' ); ?></button>
         </div>
-        <div class="bunker-rail-teaser">
-            <b class="bunker-pill bunker-pill-inline bunker-pill-bad"><?php esc_html_e( 'Bad', 'thrg-bunker' ); ?></b>
-            <span><?php esc_html_e( 'Sharing your static web page on WordPress is not recommended.', 'thrg-bunker' ); ?> <a href="#bunker-better"><?php esc_html_e( 'Learn more', 'thrg-bunker' ); ?></a></span>
-        </div>
+        <?php if ( $thrg_shared ) : ?>
+            <div class="bunker-rail-teaser">
+                <?php echo wp_kses( $thrg_bad_pill, $thrg_pill_tags ); ?>
+                <span><?php esc_html_e( 'Sharing your static web page in the same directory as WordPress is not recommended.', 'thrg-bunker' ); ?> <a href="#bunker-better"><?php esc_html_e( 'Learn more', 'thrg-bunker' ); ?></a></span>
+            </div>
+        <?php endif; ?>
     </aside>
     <div class="bunker-main<?php echo ! empty( $thrg_state['paused'] ) && $thrg_confirmed ? ' is-paused' : ''; ?>">
 
@@ -103,7 +110,7 @@ $thrg_rail_links      = array(
     <?php if ( ! $thrg_confirmed && ! is_multisite() ) : ?>
         <section class="bunker-confirm" aria-labelledby="bunker-confirm-title">
             <h2 id="bunker-confirm-title"><?php esc_html_e( 'Bunker is for WordPress running behind a static website. Is that how this site works?', 'thrg-bunker' ); ?></h2>
-            <p><?php esc_html_e( 'Every option below is already ticked, so choosing "Lock it down" turns them all on. Untick anything you want to keep open first. Nothing is enforced until you choose.', 'thrg-bunker' ); ?></p>
+            <p><?php esc_html_e( 'Every lockdown below that is ticked turns on when you choose "Lock it down". Untick anything you want to keep open first. Nothing is enforced until you choose.', 'thrg-bunker' ); ?></p>
             <?php if ( ! empty( $thrg_state['declined'] ) ) : ?>
                 <p class="bunker-banner"><strong><?php esc_html_e( 'Bunker is installed but not protecting this site yet.', 'thrg-bunker' ); ?></strong></p>
             <?php endif; ?>
@@ -123,6 +130,8 @@ $thrg_rail_links      = array(
         <section class="bunker-block" id="bunker-lockdowns">
             <h2 class="bunker-section"><?php esc_html_e( 'Lockdowns', 'thrg-bunker' ); ?></h2>
             <div class="bunker-cards">
+            <p><label><input type="checkbox" name="https_redirect" value="1" <?php checked( empty( $thrg_state['https_saved'] ) || ! empty( $thrg_state['https_redirect'] ) ); ?> /> <?php esc_html_e( 'Redirect HTTP visitors to HTTPS when settings are saved', 'thrg-bunker' ); ?></label></p>
+            <p class="description"><?php esc_html_e( 'Recommended by default. Bunker verifies HTTPS before applying an Apache/LiteSpeed rule that also covers static pages. Direct TLS hosting is required for automatic setup. Save changes to apply.', 'thrg-bunker' ); ?></p>
             <?php foreach ( $thrg_registry as $thrg_id => $thrg_item ) : ?>
                 <?php
                 $thrg_on      = THRG_Bunker_Options::is_on( $thrg_id );
@@ -236,15 +245,21 @@ $thrg_rail_links      = array(
         <?php
         $thrg_hatch_on   = THRG_Bunker_Hatch::enabled();
         $thrg_hatch_link = THRG_Bunker_Hatch::take_shown();
-        $thrg_hatch_mail = THRG_Bunker_Hatch::recipient();
-        $thrg_hatch_live = THRG_Bunker_Options::active( 'ip_lock' );
+        $thrg_hatch_note = '';
+        if ( ! THRG_Bunker_Options::enforcing() ) {
+            $thrg_hatch_note = __( 'Bunker is not enforcing anything right now (it is switched off, in safe mode or not set up yet), so the hatch does nothing yet.', 'thrg-bunker' );
+        } elseif ( ! THRG_Bunker_Options::is_on( 'ip_lock' ) ) {
+            $thrg_hatch_note = __( 'The IP lock is off, so there is nothing for the hatch to open. Switch the IP lock On to use it.', 'thrg-bunker' );
+        } elseif ( ! THRG_Bunker_Options::active( 'ip_lock' ) ) {
+            $thrg_hatch_note = __( 'The IP lock is waiting for you to save your IP list above. The hatch only matters once the lock is enforcing.', 'thrg-bunker' );
+        }
         ?>
         <section class="bunker-block" id="bunker-hatch">
             <h2 class="bunker-section"><?php esc_html_e( 'Hatch link (spare key)', 'thrg-bunker' ); ?></h2>
             <div class="bunker-panel">
                 <p><?php esc_html_e( 'If your IP address changes and you cannot reach the login page, the hatch link is a way back in. Opening it sends an approval email to the administrator. Nothing happens until someone presses Approve in that email, and then only the browser that asked is let through to the login page. You still need your password.', 'thrg-bunker' ); ?></p>
-                <?php if ( ! $thrg_hatch_live ) : ?>
-                    <p class="description"><?php esc_html_e( 'The hatch only matters while the IP lock is enforcing. Save your IP list above first.', 'thrg-bunker' ); ?></p>
+                <?php if ( '' !== $thrg_hatch_note ) : ?>
+                    <p class="description"><?php echo esc_html( $thrg_hatch_note ); ?></p>
                 <?php endif; ?>
 
                 <?php if ( '' !== $thrg_hatch_link ) : ?>
@@ -274,29 +289,27 @@ $thrg_rail_links      = array(
                         ?>
                     </p>
                 <?php endif; ?>
-                <div class="bunker-hatch-fields">
-                    <p>
-                        <label for="bunker-hatch-email"><strong><?php esc_html_e( 'Send approval emails to', 'thrg-bunker' ); ?></strong></label><br />
-                        <input form="bunker-hatch-form" type="email" id="bunker-hatch-email" name="hatch_email" class="regular-text" value="<?php echo esc_attr( $thrg_state['hatch_email'] ); ?>" placeholder="<?php echo esc_attr( (string) get_option( 'admin_email', '' ) ); ?>" />
-                        <span class="description"><?php echo esc_html( sprintf( /* translators: %s: email address. */ __( 'Leave empty to use the site administrator address (%s).', 'thrg-bunker' ), (string) get_option( 'admin_email', '' ) ) ); ?></span>
-                    </p>
-                    <p>
-                        <label for="bunker-hatch-hours"><strong><?php esc_html_e( 'How long an approved browser stays in', 'thrg-bunker' ); ?></strong></label><br />
-                        <select form="bunker-hatch-form" id="bunker-hatch-hours" name="hatch_hours">
-                            <?php foreach ( THRG_Bunker_Hatch::hour_choices() as $thrg_hours ) : ?>
-                                <?php /* translators: %d: number of hours. */ ?>
-                                <option value="<?php echo esc_attr( (string) $thrg_hours ); ?>" <?php selected( (int) $thrg_state['hatch_hours'], $thrg_hours ); ?>><?php echo esc_html( sprintf( _n( '%d hour', '%d hours', $thrg_hours, 'thrg-bunker' ), $thrg_hours ) ); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </p>
-                    <p>
-                        <button form="bunker-hatch-form" type="submit" name="hatch_do" value="save" class="button"><?php esc_html_e( 'Save hatch settings', 'thrg-bunker' ); ?></button>
-                        <button form="bunker-hatch-form" type="submit" name="hatch_do" value="create" class="button button-primary"><?php echo esc_html( $thrg_hatch_on ? __( 'Make a new link (the old one stops working)', 'thrg-bunker' ) : __( 'Create hatch link', 'thrg-bunker' ) ); ?></button>
-                        <?php if ( $thrg_hatch_on ) : ?>
-                            <button form="bunker-hatch-form" type="submit" name="hatch_do" value="disable" class="button"><?php esc_html_e( 'Turn the hatch off', 'thrg-bunker' ); ?></button>
-                        <?php endif; ?>
-                    </p>
-                </div>
+                <p>
+                    <label for="bunker-hatch-email"><strong><?php esc_html_e( 'Send approval emails to', 'thrg-bunker' ); ?></strong></label><br />
+                    <input form="bunker-hatch-form" type="email" id="bunker-hatch-email" name="hatch_email" class="regular-text" value="<?php echo esc_attr( $thrg_state['hatch_email'] ); ?>" placeholder="<?php echo esc_attr( (string) get_option( 'admin_email', '' ) ); ?>" />
+                    <span class="description"><?php echo esc_html( sprintf( /* translators: %s: email address. */ __( 'Leave empty to use the site administrator address (%s).', 'thrg-bunker' ), (string) get_option( 'admin_email', '' ) ) ); ?></span>
+                </p>
+                <p>
+                    <label for="bunker-hatch-hours"><strong><?php esc_html_e( 'How long an approved browser stays in', 'thrg-bunker' ); ?></strong></label><br />
+                    <select form="bunker-hatch-form" id="bunker-hatch-hours" name="hatch_hours">
+                        <?php foreach ( THRG_Bunker_Hatch::hour_choices() as $thrg_hours ) : ?>
+                            <?php /* translators: %d: number of hours. */ ?>
+                            <option value="<?php echo esc_attr( (string) $thrg_hours ); ?>" <?php selected( (int) $thrg_state['hatch_hours'], $thrg_hours ); ?>><?php echo esc_html( sprintf( _n( '%d hour', '%d hours', $thrg_hours, 'thrg-bunker' ), $thrg_hours ) ); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </p>
+                <p>
+                    <button form="bunker-hatch-form" type="submit" name="hatch_do" value="save" class="button"><?php esc_html_e( 'Save hatch settings', 'thrg-bunker' ); ?></button>
+                    <button form="bunker-hatch-form" type="submit" name="hatch_do" value="create" class="button button-primary"><?php echo esc_html( $thrg_hatch_on ? __( 'Make a new link (the old one stops working)', 'thrg-bunker' ) : __( 'Create hatch link', 'thrg-bunker' ) ); ?></button>
+                    <?php if ( $thrg_hatch_on ) : ?>
+                        <button form="bunker-hatch-form" type="submit" name="hatch_do" value="disable" class="button"><?php esc_html_e( 'Turn the hatch off', 'thrg-bunker' ); ?></button>
+                    <?php endif; ?>
+                </p>
                 <p class="description"><?php esc_html_e( 'If approval emails stop arriving, the hatch stays shut. Your fallbacks are renaming this plugin\'s folder (thrg-bunker) in File Manager, or adding define( \'THRG_BUNKER_SAFE_MODE\', true ); to wp-config.php.', 'thrg-bunker' ); ?></p>
             </div>
         </section>
@@ -327,7 +340,7 @@ $thrg_rail_links      = array(
                 <ul class="bunker-checks">
                 <?php foreach ( THRG_Bunker_Checks::run() as $thrg_check ) : ?>
                     <li class="is-<?php echo esc_attr( $thrg_check['status'] ); ?>">
-                        <b class="bunker-pill"><?php echo esc_html( 'good' === $thrg_check['status'] ? __( 'Good', 'thrg-bunker' ) : ( 'attention' === $thrg_check['status'] ? __( 'Bad', 'thrg-bunker' ) : __( 'Info', 'thrg-bunker' ) ) ); ?></b>
+                        <b class="bunker-pill"><?php echo esc_html( THRG_Bunker_Checks::label( $thrg_check['status'] ) ); ?></b>
                         <strong><?php echo esc_html( $thrg_check['title'] ); ?></strong>
                         <span><?php echo esc_html( $thrg_check['detail'] ); ?></span>
                     </li>
@@ -338,14 +351,29 @@ $thrg_rail_links      = array(
         </section>
 
         <section class="bunker-block" id="bunker-better">
-            <h2 class="bunker-section"><b class="bunker-pill bunker-pill-inline bunker-pill-bad"><?php esc_html_e( 'Bad', 'thrg-bunker' ); ?></b> <?php esc_html_e( 'Heads up: Sharing your static web page on WordPress is not recommended.', 'thrg-bunker' ); ?></h2>
+            <h2 class="bunker-section">
+                <?php
+                if ( $thrg_shared ) {
+                    echo wp_kses( $thrg_bad_pill, $thrg_pill_tags ) . ' ';
+                }
+                esc_html_e( 'Heads up: Sharing your static web page in the same directory as WordPress is not recommended.', 'thrg-bunker' );
+                ?>
+            </h2>
             <div class="bunker-panel">
-                <p><?php esc_html_e( 'Right now WordPress shares a folder with your website. If WordPress were ever broken into, the attacker could rewrite your homepage too. Moving WordPress to its own subdomain, such as forms.yoursite.com, keeps it apart. Putting it in a separate hosting account is stronger still, because a break-in there can\'t touch your website\'s files at all. Your form keeps working: you only change its action address to the new location.', 'thrg-bunker' ); ?></p>
+                <p>
+                    <?php
+                    if ( $thrg_shared ) {
+                        esc_html_e( 'Right now WordPress shares a directory with your website. If WordPress were ever broken into, the attacker could rewrite your homepage too. Moving WordPress to its own subdomain, such as forms.yoursite.com, keeps it apart. Putting it in a separate hosting account is stronger still, because a break-in there can\'t touch your website\'s files at all. Your form keeps working: you only change its action address to the new location.', 'thrg-bunker' );
+                    } else {
+                        esc_html_e( 'WordPress is not sharing a directory with your website, which is the safer setup. If it ever does, a break-in could let an attacker rewrite your homepage too, so keep WordPress on its own subdomain, such as forms.yoursite.com, or better still in a separate hosting account. Your form keeps working: you only change its action address to the new location.', 'thrg-bunker' );
+                    }
+                    ?>
+                </p>
                 <p>
                     <strong>
                     <?php
-                    if ( THRG_Bunker_Checks::shares_folder_with_static_site() ) {
-                        esc_html_e( 'This install shares a folder with an index.html.', 'thrg-bunker' );
+                    if ( $thrg_shared ) {
+                        esc_html_e( 'This install shares a directory with an index.html.', 'thrg-bunker' );
                     } else {
                         esc_html_e( 'No index.html was found next to WordPress.', 'thrg-bunker' );
                     }
@@ -367,7 +395,7 @@ $thrg_rail_links      = array(
             </div>
         </section>
 
-        <p class="submit"><button type="submit" name="save_section" value="general" class="button button-primary"><?php esc_html_e( 'Save changes', 'thrg-bunker' ); ?></button> <span class="description"><?php esc_html_e( 'The lockdown checkboxes save the moment you change them. This button saves the lists and other fields.', 'thrg-bunker' ); ?></span></p>
+        <p class="submit"><button type="submit" name="save_section" value="general" class="button button-primary"><?php esc_html_e( 'Save changes', 'thrg-bunker' ); ?></button> <span class="description"><?php esc_html_e( 'The lockdown checkboxes save the moment you change them. This button saves everything else on the page, including your IP list.', 'thrg-bunker' ); ?></span></p>
     </form>
 
     <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="bunker-master-form">
@@ -385,7 +413,25 @@ $thrg_rail_links      = array(
         <img class="thrg-brand-heart" src="<?php echo esc_url( $thrg_mascot ); ?>" alt="" width="44" height="44" />
         <p>
             <?php esc_html_e( 'Need a deeper look or someone to assist with updates and security?', 'thrg-bunker' ); ?><br />
-            <?php esc_html_e( 'Contact', 'thrg-bunker' ); ?> <a href="https://hackrepair.com/" title="<?php echo esc_attr( 'The Hack Repair Guy: WordPress security and hack repair' ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( 'The Hack Repair Guy' ); ?><span class="screen-reader-text"> <?php esc_html_e( '(opens in a new tab)', 'thrg-bunker' ); ?></span></a>
+            <?php
+            $thrg_contact = sprintf(
+                /* translators: %s: link to The Hack Repair Guy's website. */
+                esc_html__( 'Contact %s', 'thrg-bunker' ),
+                '<a href="https://hackrepair.com/" title="' . esc_attr( 'The Hack Repair Guy: WordPress security and hack repair' ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( 'The Hack Repair Guy' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'thrg-bunker' ) . '</span></a>'
+            );
+            echo wp_kses(
+                $thrg_contact,
+                array(
+                    'a'    => array(
+                        'href'   => array(),
+                        'title'  => array(),
+                        'target' => array(),
+                        'rel'    => array(),
+                    ),
+                    'span' => array( 'class' => array() ),
+                )
+            );
+            ?>
         </p>
     </footer>
 

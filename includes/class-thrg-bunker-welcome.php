@@ -78,7 +78,7 @@ class THRG_Bunker_Welcome {
         $body .= __( 'Your website is a fast, plain static site that faces the public. WordPress is only there to run your forms and tools behind the scenes. Bunker keeps it that way: it hides WordPress from visitors and bots, shuts the doors attackers like to knock on, and lets only you reach the login page.', 'thrg-bunker' ) . "\n\n";
 
         $body .= __( 'YOUR NEXT STEP (about two minutes)', 'thrg-bunker' ) . "\n";
-        $body .= __( 'Open the Bunker settings page, read through the lockdowns, and press "Review and lock it down" when you are happy. Every lockdown is explained in plain words, and you can switch any of them off again with one click.', 'thrg-bunker' ) . "\n";
+        $body .= __( 'Open the Bunker settings page, read through the lockdowns, and press "Lock it down" when you are happy. Every lockdown is explained in plain words, and you can switch any of them off again with one click.', 'thrg-bunker' ) . "\n";
         $body .= $url . "\n\n";
 
         $body .= __( 'IF YOU EVER GET LOCKED OUT', 'thrg-bunker' ) . "\n";

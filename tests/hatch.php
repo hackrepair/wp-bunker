@@ -196,15 +196,16 @@ $r1 = hit( array( 'thrg_hatch' => $token3 ) );
 $r2 = hit( array( 'thrg_hatch' => $token3 ), null, $r1[1] );
 check( 'a second visit from the same browser sends no second email', 1 === count( $GLOBALS['mails'] ) && 'redirect' === kind( $r2 ) );
 $r3 = hit( array( 'thrg_hatch' => $token3 ) ); // A different browser: no cookies sent.
-check( 'another browser within a minute is asked to wait; no email', 'Please wait a minute' === title( $r3 ) && 1 === count( $GLOBALS['mails'] ) );
+check( 'another browser within a minute is asked to wait; no email', 'Approval pending' === title( $r3 ) && 1 === count( $GLOBALS['mails'] ) );
 update_option( THRG_Bunker_Hatch::LOG_OPTION, array( time() - 120, time() - 130, time() - 140, time() - 150, time() - 160 ) );
 $r4 = hit( array( 'thrg_hatch' => $token3 ) );
-check( 'five emails in an hour is the limit', 'Too many requests' === title( $r4 ) && 1 === count( $GLOBALS['mails'] ) );
+check( 'five emails in an hour is the limit', 'Approval pending' === title( $r4 ) && 1 === count( $GLOBALS['mails'] ) );
 update_option( THRG_Bunker_Hatch::LOG_OPTION, array( time() - 120, time() - 130, time() - 140, time() - 150 ) );
 $r5 = hit( array( 'thrg_hatch' => $token3 ) );
-check( 'under the limit a new request replaces the old one', 'redirect' === kind( $r5 ) && 2 === count( $GLOBALS['mails'] ) );
+check( 'a second browser preserves the pending request', 'Approval pending' === title( $r5 ) && 1 === count( $GLOBALS['mails'] ) );
+delete_option( THRG_Bunker_Hatch::REQUEST_OPTION );
 update_option( THRG_Bunker_Hatch::LOG_OPTION, array( time() - 4000 ) );
-check( 'emails older than an hour do not count', 'redirect' === kind( hit( array( 'thrg_hatch' => $token3 ) ) ) && 3 === count( $GLOBALS['mails'] ) );
+check( 'emails older than an hour do not count', 'redirect' === kind( hit( array( 'thrg_hatch' => $token3 ) ) ) && 2 === count( $GLOBALS['mails'] ) );
 
 // --- Expiry. ---
 reset_flow();
@@ -248,3 +249,27 @@ $_SERVER['REMOTE_ADDR'] = '198.51.100.9';
 $GLOBALS['pagenow']     = 'admin-post.php';
 reset_flow();
 check( 'admin-post.php is never held up by the hatch', 'passed' === kind( hit( array( 'thrg_hatch' => $token4 ) ) ) && array() === $GLOBALS['mails'] );
+
+// --- Review M7: the email states the real expiry. ---
+reset_flow();
+$GLOBALS['pagenow'] = 'wp-login.php';
+hit( array( 'thrg_hatch' => $token4 ) );
+check( 'the email says the request expires in 15 minutes by default', false !== strpos( $GLOBALS['mails'][0][2], 'expires in 15 minutes' ) );
+reset_flow();
+$ttl = THRG_Bunker_Hatch::REQUEST_TTL;
+$req = array( 'created' => 1000, 'expires' => 1000 + 600, 'ip' => '198.51.100.9', 'agent' => 'Browser/1' );
+$m   = new ReflectionMethod( 'THRG_Bunker_Hatch', 'send_mail' );
+$m->setAccessible( true );
+$GLOBALS['mails'] = array();
+$m->invoke( null, $req, str_repeat( 'a', 48 ) );
+check( 'a different expiry is reflected in the email', false !== strpos( $GLOBALS['mails'][0][2], 'expires in 10 minutes' ) );
+
+// --- Review M8: a new link or switching off resets the old link's counters. ---
+THRG_Bunker_Options::update( array( 'hatch_failed' => 12, 'hatch_failed_at' => time(), 'hatch_mail_error' => time() ) );
+THRG_Bunker_Hatch::create();
+$state = THRG_Bunker_Options::state();
+check( 'a new link starts with a clean wrong-link count and no mail warning', 0 === $state['hatch_failed'] && 0 === $state['hatch_failed_at'] && 0 === $state['hatch_mail_error'] );
+THRG_Bunker_Options::update( array( 'hatch_failed' => 3, 'hatch_mail_error' => time() ) );
+THRG_Bunker_Hatch::disable();
+$state = THRG_Bunker_Options::state();
+check( 'turning the hatch off clears them too', 0 === $state['hatch_failed'] && 0 === $state['hatch_mail_error'] );

@@ -1,4 +1,6 @@
-/* The Hack Repair Guy's Bunker: scoped to .thrg-bunker */
+/* The Hack Repair Guy's Bunker: scoped to .thrg-bunker. Sections follow the page from top to bottom. */
+
+/* Base and colours */
 .thrg-bunker {
     --ink: #18354b;
     --ink-soft: #4f6577;
@@ -8,15 +10,15 @@
     --review: #8a5a00;
     --review-bg: #fff4d6;
     --attention: #c62828;
-    --attention-bg: #fdecea;
     --orange: #b34700;
     --orange-dark: #8f3a00;
-    max-width: 960px;
+    max-width: 1180px;
     color: var(--ink);
 }
 .thrg-bunker * { box-sizing: border-box; }
 .thrg-bunker p { font-size: 14px; line-height: 1.6; margin: 0 0 8px; }
 
+/* Header */
 .bunker-head { display: flex; align-items: center; gap: 14px; margin: 10px 0 18px; }
 .bunker-head .bunker-mascot { width: 56px; height: 56px; flex: none; }
 .bunker-eyebrow { font-size: 12px !important; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--orange); margin: 0 !important; }
@@ -24,16 +26,50 @@
 .bunker-version { color: var(--ink-soft); font-size: 12px; font-weight: 400; margin-left: 6px; }
 .bunker-byline { color: var(--ink-soft); margin: 0; }
 
+/* Layout: left column and main column */
+.bunker-layout { display: flex; align-items: flex-start; gap: 22px; }
+.bunker-main { flex: 1 1 auto; min-width: 0; max-width: 960px; }
+.bunker-main.is-paused .bunker-cards { opacity: .55; }
+.bunker-block, .bunker-extra { scroll-margin-top: 48px; }
+
+/* Left column: status, jump links, Save, one teaser */
+.bunker-rail { flex: 0 0 210px; width: 210px; position: sticky; top: 44px; max-height: calc(100vh - 60px); overflow-y: auto; display: grid; gap: 12px; align-self: flex-start; }
+.bunker-rail-box { background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--orange); border-radius: 6px; padding: 10px 12px; }
+.thrg-bunker .bunker-rail-title { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--orange); }
+.bunker-status { margin: 0; font-size: 13px; display: grid; grid-template-columns: auto 1fr; gap: 6px 6px; align-items: center; }
+.bunker-status dt { color: var(--ink-soft); margin: 0; }
+.bunker-status dt::after { content: ":"; }
+.bunker-status dd { margin: 0; font-weight: 700; }
+.bunker-status dd.is-wait { color: var(--review); }
+.bunker-jump { margin: 0; padding: 0; list-style: none; }
+.bunker-jump a { display: block; padding: 4px 8px; margin: 0 -8px; border-radius: 4px; font-size: 13px; text-decoration: none; color: var(--ink); }
+.bunker-jump a:hover { background: #fff1e6; color: var(--orange-dark); }
+.bunker-rail .bunker-rail-save { width: 100%; text-align: center; }
+.bunker-rail-teaser { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border: 1px dashed var(--orange); border-radius: 6px; background: #fff8f2; color: var(--ink); font-size: 13px; }
+.bunker-rail-teaser a { color: var(--orange); font-weight: 600; }
+
+/* The On | Off switch */
+.bunker-status dd.bunker-switch { display: inline-flex; flex-wrap: wrap; align-items: center; font-weight: 400; }
+.bunker-seg { margin: 0; padding: 2px 12px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.bunker-seg.is-on { border-radius: 4px 0 0 4px; }
+.bunker-seg.is-off { border-radius: 0 4px 4px 0; border-left: 0; }
+.bunker-seg.is-on.is-current { background: var(--ok); border-color: var(--ok); color: #fff; }
+.bunker-seg.is-off.is-current { background: #5f6b76; border-color: #5f6b76; color: #fff; }
+.bunker-seg:not(.is-current):hover { background: #fff1e6; color: var(--orange-dark); }
+.bunker-wait { width: 100%; margin-top: 2px; font-size: 11px; font-weight: 400; color: var(--review); }
+
+/* First-run confirmation */
 .bunker-confirm { background: var(--review-bg); border: 1px solid #e6c46a; border-left: 4px solid #d39b1f; border-radius: 6px; padding: 14px 18px; margin: 0 0 18px; }
 .bunker-confirm h2 { margin: 0 0 8px; font-size: 17px; color: var(--ink); }
 .bunker-banner { color: var(--review); }
 
+/* Section headings and panels */
 .bunker-block { margin: 0 0 18px; }
 .thrg-bunker .bunker-section { margin: 0; padding: 10px 14px; font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--ink); background: linear-gradient(90deg, #fff1e6, #fff); border: 1px solid var(--line); border-bottom: 0; border-left: 4px solid var(--orange); border-radius: 6px 6px 0 0; }
 .bunker-panel { background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--orange); border-radius: 0 0 6px 6px; padding: 14px 16px; }
 .bunker-cards { background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--orange); border-radius: 0 0 6px 6px; padding: 10px; display: grid; gap: 10px; }
 
-/* One lockdown: green when on, amber when off or waiting. */
+/* One lockdown: green when on, amber when off or waiting */
 .bunker-card { border: 1px solid var(--line); border-left: 4px solid var(--ok); border-radius: 6px; background: var(--ok-bg); padding: 10px 14px; transition: background-color .3s ease, border-color .3s ease; }
 .bunker-card.is-off { border-left-color: #d39b1f; background: var(--review-bg); }
 .bunker-toggle { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; }
@@ -41,15 +77,14 @@
 .thrg-bunker .bunker-msg { margin: 6px 0 0 26px; color: var(--ink); transform-origin: top center; transition: transform .15s ease, opacity .15s ease; }
 .bunker-card.is-flipping .bunker-msg { transform: rotateX(90deg); opacity: 0; }
 .thrg-bunker .bunker-note { margin: 6px 0 0 26px; color: var(--attention); font-weight: 600; }
-@media (prefers-reduced-motion: reduce) {
-    .bunker-card, .thrg-bunker .bunker-msg { transition: none; }
-    .bunker-card.is-flipping .bunker-msg { transform: none; opacity: 1; }
-}
 
+/* Extra fields under a lockdown */
 .bunker-extra { margin: -4px 0 4px 14px; padding: 10px 14px; background: #fff; border: 1px solid var(--line); border-radius: 6px; }
 .bunker-warning { color: var(--attention); }
 .bunker-code { background: #f5f7f9; border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; font-size: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+.bunker-list { margin: 0 0 8px 18px; list-style: disc; }
 
+/* Review checks and the Good / Bad / Info word */
 .bunker-checks { list-style: none; margin: 0 0 10px; padding: 0; }
 .bunker-checks li { padding: 8px 10px 8px 64px; position: relative; font-size: 14px; border-bottom: 1px solid var(--line); }
 .bunker-checks li:last-child { border-bottom: 0; }
@@ -59,43 +94,25 @@
 .bunker-checks li.is-good .bunker-pill { background: var(--ok); }
 .bunker-checks li.is-attention .bunker-pill { background: var(--attention); }
 .bunker-checks li.is-info .bunker-pill { background: #6b8296; }
+.bunker-pill-inline { position: static; display: inline-block; width: auto; min-width: 40px; padding: 0 8px; margin-right: 8px; vertical-align: middle; }
+.bunker-pill-bad { background: var(--attention); }
+.bunker-rail-teaser .bunker-pill-inline { margin: 1px 0 0; flex: 0 0 auto; }
 
+/* Buttons and focus */
 .thrg-bunker .button-primary, .thrg-bunker .button-primary:hover, .thrg-bunker .button-primary:focus { background: var(--orange); border-color: var(--orange-dark); color: #fff; text-shadow: none; box-shadow: none; }
 .thrg-bunker .button-primary:hover { background: var(--orange-dark); }
 .thrg-bunker .button:not(.button-primary) { color: var(--orange-dark); border-color: var(--orange); background: #fff; }
 .thrg-bunker a:focus-visible, .thrg-bunker .button:focus-visible, .thrg-bunker input:focus-visible, .thrg-bunker textarea:focus-visible, .thrg-bunker select:focus-visible { outline: 3px solid #d87935; outline-offset: 2px; }
 
+/* Footer */
 .bunker-footer { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--line); margin-top: 24px; padding-top: 16px; }
 .bunker-footer img { flex: none; }
-@media (max-width: 600px) {
-    .bunker-head { align-items: flex-start; }
-    .bunker-extra { margin-left: 0; }
-}
-.bunker-list { margin: 0 0 8px 18px; list-style: disc; }
 
-/* Left column: status, jump links, Save, one teaser. */
-.thrg-bunker { max-width: 1180px; }
-.bunker-layout { display: flex; align-items: flex-start; gap: 22px; }
-.bunker-main { flex: 1 1 auto; min-width: 0; max-width: 960px; }
-.bunker-rail { flex: 0 0 210px; width: 210px; position: sticky; top: 44px; max-height: calc(100vh - 60px); overflow-y: auto; display: grid; gap: 12px; align-self: flex-start; }
-.bunker-rail-box { background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--orange); border-radius: 6px; padding: 10px 12px; }
-.thrg-bunker .bunker-rail-title { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--orange); }
-.bunker-status { margin: 0; font-size: 13px; }
-.bunker-status { display: grid; grid-template-columns: auto 1fr; gap: 6px 6px; align-items: center; }
-.bunker-status dt { color: var(--ink-soft); margin: 0; }
-.bunker-status dt::after { content: ":"; }
-.bunker-status dd { margin: 0; font-weight: 700; word-break: break-all; }
-.bunker-status dd.is-good { color: var(--ok); }
-.bunker-status dd.is-wait { color: var(--review); }
-.bunker-status dd.is-off { color: var(--ink-soft); }
-.bunker-jump { margin: 0; padding: 0; list-style: none; }
-.bunker-jump a { display: block; padding: 4px 8px; margin: 0 -8px; border-radius: 4px; font-size: 13px; text-decoration: none; color: var(--ink); }
-.bunker-jump a:hover { background: #fff1e6; color: var(--orange-dark); }
-.bunker-rail .bunker-rail-save { width: 100%; text-align: center; }
-.bunker-rail-teaser { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border: 1px dashed var(--orange); border-radius: 6px; background: #fff8f2; color: var(--ink); text-decoration: none; font-size: 13px; }
-.bunker-rail-teaser strong { display: block; color: var(--orange); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
-.bunker-rail-teaser a { color: var(--orange); font-weight: 600; }
-.bunker-block, .bunker-extra { scroll-margin-top: 48px; }
+/* Motion, narrow screens */
+@media (prefers-reduced-motion: reduce) {
+    .bunker-card, .thrg-bunker .bunker-msg { transition: none; }
+    .bunker-card.is-flipping .bunker-msg { transform: none; opacity: 1; }
+}
 @media (prefers-reduced-motion: no-preference) {
     html { scroll-behavior: smooth; }
 }
@@ -104,22 +121,7 @@
     .bunker-rail { position: static; width: 100%; flex-basis: auto; max-height: none; overflow: visible; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 14px; }
     .bunker-main { width: 100%; }
 }
-
-/* The On | Off switch. */
-.bunker-status dd.bunker-switch { display: inline-flex; font-weight: 400; }
-.bunker-seg { margin: 0; padding: 2px 12px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
-.bunker-seg.is-on { border-radius: 4px 0 0 4px; }
-.bunker-seg.is-off { border-radius: 0 4px 4px 0; border-left: 0; }
-.bunker-seg.is-on.is-current { background: var(--ok); border-color: var(--ok); color: #fff; }
-.bunker-seg.is-off.is-current { background: #5f6b76; border-color: #5f6b76; color: #fff; }
-.bunker-seg:not(.is-current):hover { background: #fff1e6; color: var(--orange-dark); }
-.bunker-status dd.bunker-switch { flex-wrap: wrap; align-items: center; }
-.bunker-wait { width: 100%; margin-top: 2px; font-size: 11px; font-weight: 400; color: var(--review); }
-.bunker-main.is-paused .bunker-cards { opacity: .55; }
-.thrg-bunker .bunker-section-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; }
-.bunker-myip { font-size: 13px; font-weight: 400; color: var(--ink-soft); }
-.bunker-myip strong { color: var(--ink); font-weight: 700; }
-
-.bunker-pill-inline { position: static; display: inline-block; width: auto; min-width: 40px; padding: 0 8px; margin-right: 8px; vertical-align: middle; letter-spacing: 0; text-transform: none; }
-.bunker-pill-bad { background: var(--attention); }
-.bunker-rail-teaser .bunker-pill-inline { margin: 1px 0 0; flex: 0 0 auto; }
+@media (max-width: 600px) {
+    .bunker-head { align-items: flex-start; }
+    .bunker-extra { margin-left: 0; }
+}

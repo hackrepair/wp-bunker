@@ -2,11 +2,11 @@
 /**
  * Send Bunker's three emails to a local Mailpit so they can be read in a mail client view.
  *
- * Not part of the pass/fail suite. Run on a machine with Mailpit listening:
- *   php tests/mailpit.php [http://127.0.0.1:8025]
+ * Not a test and not shipped in the release zip (scripts/ is excluded). Run on a machine with Mailpit listening:
+ *   php scripts/mailpit-preview.php [http://127.0.0.1:8025]
  * Every message is tagged "thrg-bunker" and sent from wordpress@thrg-bunker.test.
  */
-require __DIR__ . '/bootstrap.php';
+require __DIR__ . '/../tests/bootstrap.php';
 thrg_load_plugin();
 
 $base = isset( $argv[1] ) ? rtrim( $argv[1], '/' ) : 'http://127.0.0.1:8025';

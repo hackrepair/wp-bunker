@@ -115,3 +115,22 @@ check( 'and good while on', 'good' === $row['status'] );
 define( 'XMLRPC_REQUEST', true );
 $e = thrg_catch( array( 'THRG_Bunker_Lockdown', 'xmlrpc' ) );
 check( 'XML-RPC answers 404 with item 14 on', $e && 'notfound' === $e->getMessage() );
+
+// Review M4: the comment and known-action refusals answer 404 too once item 14 is active.
+$e = thrg_catch( array( 'THRG_Bunker_Lockdown', 'refuse_comment' ) );
+check( 'with item 14 on, a refused comment gets the 404', $e && 'notfound' === $e->getMessage() );
+THRG_Bunker_Options::update( array( 'actions_allow' => 'contact_form' ) );
+$GLOBALS['user']    = 0;
+$GLOBALS['pagenow'] = 'admin-post.php';
+$_REQUEST['action'] = 'other_plugin_action';
+$e = thrg_catch( array( 'THRG_Bunker_Lockdown', 'known_actions_gate' ) );
+check( 'with item 14 on, a refused form action gets the 404', $e && 'notfound' === $e->getMessage() );
+$_REQUEST['action'] = 'contact_form';
+check( 'a listed form action still works', null === thrg_catch( array( 'THRG_Bunker_Lockdown', 'known_actions_gate' ) ) );
+THRG_Bunker_Options::set( 'stealth', false );
+$_REQUEST['action'] = 'other_plugin_action';
+$e = thrg_catch( array( 'THRG_Bunker_Lockdown', 'known_actions_gate' ) );
+check( 'with item 14 off they still answer 403', $e && 'wp_die' === $e->getMessage() && 403 === $e->status );
+$e = thrg_catch( array( 'THRG_Bunker_Lockdown', 'refuse_comment' ) );
+check( 'and a refused comment answers 403', $e && 'wp_die' === $e->getMessage() && 403 === $e->status );
+unset( $_REQUEST['action'] );

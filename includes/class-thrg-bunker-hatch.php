@@ -155,10 +155,13 @@ final class THRG_Bunker_Hatch {
         $token = bin2hex( random_bytes( 24 ) );
         THRG_Bunker_Options::update(
             array(
-                'hatch_on'      => 1,
-                'hatch_hash'    => hash( 'sha256', $token ),
-                'hatch_version' => (int) $state['hatch_version'] + 1,
-                'hatch_created' => time(),
+                'hatch_on'         => 1,
+                'hatch_hash'       => hash( 'sha256', $token ),
+                'hatch_version'    => (int) $state['hatch_version'] + 1,
+                'hatch_created'    => time(),
+                'hatch_failed'     => 0,
+                'hatch_failed_at'  => 0,
+                'hatch_mail_error' => 0,
             )
         );
         delete_option( self::REQUEST_OPTION );
@@ -174,9 +177,12 @@ final class THRG_Bunker_Hatch {
         $state = THRG_Bunker_Options::state();
         THRG_Bunker_Options::update(
             array(
-                'hatch_on'      => 0,
-                'hatch_hash'    => '',
-                'hatch_version' => (int) $state['hatch_version'] + 1,
+                'hatch_on'         => 0,
+                'hatch_hash'       => '',
+                'hatch_version'    => (int) $state['hatch_version'] + 1,
+                'hatch_failed'     => 0,
+                'hatch_failed_at'  => 0,
+                'hatch_mail_error' => 0,
             )
         );
         delete_option( self::REQUEST_OPTION );
@@ -194,23 +200,48 @@ final class THRG_Bunker_Hatch {
     }
 
     /**
+     * The On side of the hatch switch: make a link, unless the hatch is already on (then nothing changes).
+     *
+     * @return bool Whether a new link was made and is waiting to be shown.
+     */
+    public static function switch_on() {
+        if ( self::enabled() ) {
+            THRG_Bunker_Settings::flash( 'info', __( 'The hatch link is already on. To replace the link, use "Make a new link" in the Hatch link section.', 'thrg-bunker' ) );
+            return false;
+        }
+        self::create_and_show();
+        return true;
+    }
+
+    /**
+     * Turn the hatch off and say so. Used by the switch and by the section's button.
+     *
+     * @return void
+     */
+    public static function turn_off() {
+        if ( ! self::enabled() ) {
+            THRG_Bunker_Settings::flash( 'info', __( 'The hatch link is already off.', 'thrg-bunker' ) );
+            return;
+        }
+        self::disable();
+        THRG_Bunker_Settings::flash( 'success', __( 'The hatch is off. The old link and every approved browser stopped working.', 'thrg-bunker' ) );
+    }
+
+    /**
      * Settings page buttons: create, disable or save the hatch options.
      *
      * @return void
      */
     public static function handle_admin() {
         check_admin_referer( 'thrg_bunker_hatch' );
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( esc_html__( 'You are not allowed to do this.', 'thrg-bunker' ), '', array( 'response' => 403 ) );
-        }
+        THRG_Bunker_Settings::require_admin();
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above verified the nonce.
         $do = isset( $_POST['hatch_do'] ) ? sanitize_key( wp_unslash( $_POST['hatch_do'] ) ) : '';
 
         if ( 'create' === $do ) {
             self::create_and_show();
         } elseif ( 'disable' === $do ) {
-            self::disable();
-            THRG_Bunker_Settings::flash( 'success', __( 'The hatch is off. The old link and every approved browser stopped working.', 'thrg-bunker' ) );
+            self::turn_off();
         } else {
             // phpcs:disable WordPress.Security.NonceVerification.Missing -- check_admin_referer() above verified the nonce.
             $email = isset( $_POST['hatch_email'] ) ? sanitize_email( wp_unslash( $_POST['hatch_email'] ) ) : '';
@@ -249,41 +280,61 @@ final class THRG_Bunker_Hatch {
             self::go_wait();
         }
 
-        $log = self::recent_log();
-        if ( $log && ( time() - max( $log ) ) < self::MIN_GAP ) {
-            self::page( __( 'Please wait a minute', 'thrg-bunker' ), '<p>' . esc_html__( 'An approval email was just sent. Check your inbox, or try this link again in a minute.', 'thrg-bunker' ) . '</p>' );
+        // Hold the creation lock through mail delivery and release it at request shutdown.
+        // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+        $lock = fopen( sys_get_temp_dir() . '/thrg-hatch-' . hash( 'sha256', ABSPATH ) . '.lock', 'c' );
+        if ( false === $lock || ! flock( $lock, LOCK_EX | LOCK_NB ) ) {
+            if ( is_resource( $lock ) ) {
+                // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+                fclose( $lock );
+            }
+            self::page( __( 'Please try again', 'thrg-bunker' ), '<p>' . esc_html__( 'An approval request is being processed.', 'thrg-bunker' ) . '</p>' );
         }
-        if ( count( $log ) >= self::MAX_PER_HOUR ) {
-            self::page( __( 'Too many requests', 'thrg-bunker' ), '<p>' . esc_html__( 'Too many approval emails were sent in the last hour. Try again later.', 'thrg-bunker' ) . '</p>' );
-        }
+        try {
+            if ( self::stored_request() ) {
+                self::page( __( 'Approval pending', 'thrg-bunker' ), '<p>' . esc_html__( 'An earlier browser request is still active. Complete it or wait for it to expire.', 'thrg-bunker' ) . '</p>' );
+            }
 
-        $state   = THRG_Bunker_Options::state();
-        $browser = bin2hex( random_bytes( 24 ) );
-        $secret  = bin2hex( random_bytes( 24 ) );
-        $request = array(
-            'browser' => hash( 'sha256', $browser ),
-            'secret'  => hash( 'sha256', $secret ),
-            'status'  => 'pending',
-            'ip'      => self::visitor_ip(),
-            'agent'   => self::agent(),
-            'created' => time(),
-            'expires' => time() + (int) apply_filters( 'thrg_bunker_hatch_request_ttl', self::REQUEST_TTL ),
-        );
-        update_option( self::REQUEST_OPTION, $request, false );
+            $log = self::recent_log();
+            if ( $log && ( time() - max( $log ) ) < self::MIN_GAP ) {
+                self::page( __( 'Please wait a minute', 'thrg-bunker' ), '<p>' . esc_html__( 'An approval email was just sent. Check your inbox, or try this link again in a minute.', 'thrg-bunker' ) . '</p>' );
+            }
+            if ( count( $log ) >= self::MAX_PER_HOUR ) {
+                self::page( __( 'Too many requests', 'thrg-bunker' ), '<p>' . esc_html__( 'Too many approval emails were sent in the last hour. Try again later.', 'thrg-bunker' ) . '</p>' );
+            }
 
-        if ( ! self::send_mail( $request, $secret ) ) {
-            delete_option( self::REQUEST_OPTION );
-            THRG_Bunker_Options::update( array( 'hatch_mail_error' => time() ) );
-            self::page( __( 'The email could not be sent', 'thrg-bunker' ), '<p>' . esc_html__( 'This site could not send the approval email, so the hatch stays shut.', 'thrg-bunker' ) . '</p>' );
-        }
-        if ( ! empty( $state['hatch_mail_error'] ) ) {
-            THRG_Bunker_Options::update( array( 'hatch_mail_error' => 0 ) );
-        }
-        $log[] = time();
-        update_option( self::LOG_OPTION, $log, false );
+            $state   = THRG_Bunker_Options::state();
+            $browser = bin2hex( random_bytes( 24 ) );
+            $secret  = bin2hex( random_bytes( 24 ) );
+            $request = array(
+                'browser' => hash( 'sha256', $browser ),
+                'secret'  => hash( 'sha256', $secret ),
+                'status'  => 'pending',
+                'ip'      => self::visitor_ip(),
+                'agent'   => self::agent(),
+                'created' => time(),
+                'expires' => time() + (int) apply_filters( 'thrg_bunker_hatch_request_ttl', self::REQUEST_TTL ),
+            );
+            update_option( self::REQUEST_OPTION, $request, false );
 
-        self::cookie( self::REQUEST_COOKIE, $browser, time() + self::REQUEST_TTL );
-        self::go_wait();
+            if ( ! self::send_mail( $request, $secret ) ) {
+                delete_option( self::REQUEST_OPTION );
+                THRG_Bunker_Options::update( array( 'hatch_mail_error' => time() ) );
+                self::page( __( 'The email could not be sent', 'thrg-bunker' ), '<p>' . esc_html__( 'This site could not send the approval email, so the hatch stays shut.', 'thrg-bunker' ) . '</p>' );
+            }
+            if ( ! empty( $state['hatch_mail_error'] ) ) {
+                THRG_Bunker_Options::update( array( 'hatch_mail_error' => 0 ) );
+            }
+            $log[] = time();
+            update_option( self::LOG_OPTION, $log, false );
+
+            self::cookie( self::REQUEST_COOKIE, $browser, time() + self::REQUEST_TTL );
+            self::go_wait();
+        } finally {
+            flock( $lock, LOCK_UN );
+            // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
+            fclose( $lock );
+        }
     }
 
     /**
@@ -471,12 +522,16 @@ final class THRG_Bunker_Hatch {
             __( 'Someone opened the Bunker hatch link for %s and asked to reach the login page.', 'thrg-bunker' ),
             $site
         ) . "\n\n";
-        $body .= THRG_Bunker_Mail::site_line();
-        $body .= __( 'Time: ', 'thrg-bunker' ) . gmdate( 'Y-m-d H:i:s', (int) $request['created'] ) . " UTC\n";
-        $body .= __( 'IP address: ', 'thrg-bunker' ) . $request['ip'] . "\n";
-        $body .= __( 'Browser: ', 'thrg-bunker' ) . $request['agent'] . "\n\n";
-        $body .= __( 'To approve or deny it, open this page and press a button:', 'thrg-bunker' ) . "\n" . $review . "\n\n";
-        $body .= __( 'If this was not you, press Deny, or "Deny and turn the hatch off". Opening the page alone changes nothing. The request expires in 15 minutes.', 'thrg-bunker' ) . "\n";
+        $body   .= THRG_Bunker_Mail::site_line();
+        $body   .= __( 'Time: ', 'thrg-bunker' ) . gmdate( 'Y-m-d H:i:s', (int) $request['created'] ) . " UTC\n";
+        $body   .= __( 'IP address: ', 'thrg-bunker' ) . $request['ip'] . "\n";
+        $body   .= __( 'Browser: ', 'thrg-bunker' ) . $request['agent'] . "\n\n";
+        $body   .= __( 'To approve or deny it, open this page and press a button:', 'thrg-bunker' ) . "\n" . $review . "\n\n";
+        $seconds = isset( $request['expires'], $request['created'] ) ? (int) $request['expires'] - (int) $request['created'] : self::REQUEST_TTL;
+        $minutes = max( 1, (int) round( $seconds / 60 ) );
+        $body   .= __( 'If this was not you, press Deny, or "Deny and turn the hatch off". Opening the page alone changes nothing.', 'thrg-bunker' ) . ' ';
+        /* translators: %d: minutes until the request expires. */
+        $body .= sprintf( _n( 'The request expires in %d minute.', 'The request expires in %d minutes.', $minutes, 'thrg-bunker' ), $minutes ) . "\n";
         return (bool) wp_mail( self::recipient(), $subject, $body );
     }
 

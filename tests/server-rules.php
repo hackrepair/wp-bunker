@@ -32,7 +32,7 @@ $GLOBALS['http'] = 200;
 $result          = THRG_Bunker_Server_Rules::apply( 'version_files' );
 check( 'apply writes the block', $result['ok'] && THRG_Bunker_Server_Rules::present( $root ) );
 check( 'apply kept the file permissions', 0640 === ( fileperms( $root ) & 0777 ) );
-check( 'apply left a backup of the previous file', $existing === file_get_contents( THRG_Bunker_Server_Rules::backup_path( $root ) ) );
+check( 'apply deletes its backup once the site answers', ! file_exists( THRG_Bunker_Server_Rules::backup_path( $root ) ) );
 check( 'no temp file left behind', ! file_exists( $root . '.thrg-bunker-tmp' ) );
 check( 'existing content preserved after apply', 0 === strpos( file_get_contents( $root ), $existing ) );
 check( 'remove takes the block out and keeps the rest', THRG_Bunker_Server_Rules::remove( 'version_files' ) && $existing === file_get_contents( $root ) );
@@ -41,10 +41,13 @@ check( 'remove takes the block out and keeps the rest', THRG_Bunker_Server_Rules
 $GLOBALS['http'] = 500;
 $result          = THRG_Bunker_Server_Rules::apply( 'version_files' );
 check( 'a 5xx answer rolls the file back and reports it', ! $result['ok'] && '' !== $result['message'] && $existing === file_get_contents( $root ) );
+check( 'and leaves no backup behind', ! file_exists( THRG_Bunker_Server_Rules::backup_path( $root ) ) );
 $GLOBALS['http'] = new WP_Error( 'http', 'no loopback' );
 $result          = THRG_Bunker_Server_Rules::apply( 'version_files' );
 check( 'an unreachable loopback keeps the rules (inconclusive, not a failure)', $result['ok'] && THRG_Bunker_Server_Rules::present( $root ) );
+check( 'an inconclusive check keeps the backup for a manual rollback', $existing === file_get_contents( THRG_Bunker_Server_Rules::backup_path( $root ) ) );
 THRG_Bunker_Server_Rules::remove( 'version_files' );
+check( 'remove also clears a leftover backup', ! file_exists( THRG_Bunker_Server_Rules::backup_path( $root ) ) );
 $GLOBALS['http'] = 200;
 
 // Uploads file is created when missing.
@@ -64,6 +67,16 @@ check( 'sync writes both rules after confirmation', THRG_Bunker_Server_Rules::pr
 THRG_Bunker_Options::set( 'uploads_php', false );
 THRG_Bunker_Server_Rules::sync();
 check( 'unticking removes only that block', THRG_Bunker_Server_Rules::present( $root ) && ! THRG_Bunker_Server_Rules::present( $uploads ) );
+// Review M6: a block removed by hand is noticed and put back.
+file_put_contents( $root, $existing );
+THRG_Bunker_Server_Rules::sync();
+check( 'sync puts back a block that was removed by hand', THRG_Bunker_Server_Rules::present( $root ) && 0 === strpos( file_get_contents( $root ), $existing ) );
+$stray = ABSPATH . 'wp-content/uploads/.htaccess';
+THRG_Bunker_Options::set( 'uploads_php', false );
+THRG_Bunker_Options::update( array( 'server_rules' => array() ) );
+file_put_contents( $stray, THRG_Bunker_Server_Rules::block( array( '# stray' ) ) );
+THRG_Bunker_Server_Rules::sync();
+check( 'sync removes a stray block for a lockdown that is off', ! THRG_Bunker_Server_Rules::present( $stray ) );
 THRG_Bunker_Options::set( 'uploads_php', true );
 $GLOBALS['http'] = 503;
 $notes           = THRG_Bunker_Server_Rules::sync();
@@ -78,3 +91,13 @@ $is_apache            = false;
 THRG_Bunker_Options::update( array( 'server_rules' => array() ) );
 THRG_Bunker_Options::set( 'uploads_php', true );
 check( 'on Nginx, sync writes nothing', array() === THRG_Bunker_Server_Rules::sync() && ! THRG_Bunker_Server_Rules::present( $root ) );
+
+// Regression: removing complete marker lines preserves both neighboring directives.
+foreach ( array( "\n", "\r\n" ) as $eol ) {
+    $input = 'Options -Indexes' . $eol . str_replace( "\n", $eol, THRG_Bunker_Server_Rules::block( array( '# rule' ) ) ) . 'RewriteEngine On' . $eol;
+    check( 'adjacent directives survive removal', THRG_Bunker_Server_Rules::strip( $input ) === 'Options -Indexes' . $eol . 'RewriteEngine On' . $eol );
+}
+$broken = "# BEGIN THRG Bunker\nOptions -Indexes\n";
+check( 'ambiguous markers remain untouched', $broken === THRG_Bunker_Server_Rules::with_block( $broken, array( '# replacement' ) ) );
+check( 'case-distinct actions stay distinct', ! THRG_Bunker_Lockdown::action_allowed( 'SEND', 'send' ) );
+check( 'array actions are rejected', ! THRG_Bunker_Lockdown::action_allowed( array( 'send' ), 'send' ) );

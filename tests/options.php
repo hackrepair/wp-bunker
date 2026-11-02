@@ -63,3 +63,19 @@ $GLOBALS['opts'][ THRG_Bunker_Options::OPTION ] = 'garbage';
 check( 'a corrupted option falls back to defaults', 0 === THRG_Bunker_Options::state()['confirmed'] );
 
 check( 'lines() cleans, splits and de-duplicates', array( 'a', 'b', 'c' ) === THRG_Bunker_Options::lines( " a\r\nb, c\n\na\n" ) );
+
+// Review H3: defaults come from one plain map, and the state is read once per change.
+$registry = THRG_Bunker_Options::registry();
+$map      = array();
+foreach ( $registry as $id => $item ) {
+    $map[ $id ] = $item['default'];
+}
+check( 'registry defaults and the default map agree', $map === THRG_Bunker_Options::DEFAULTS && THRG_Bunker_Options::defaults()['toggles'] === THRG_Bunker_Options::DEFAULTS );
+$GLOBALS['opts'] = array();
+THRG_Bunker_Options::update( array( 'confirmed' => 1 ) );
+$one = THRG_Bunker_Options::state();
+check( 'repeated reads give the same state', $one === THRG_Bunker_Options::state() );
+$GLOBALS['opts'][ THRG_Bunker_Options::OPTION ]['confirmed'] = 0;
+check( 'a change made outside Bunker is noticed, never served stale', 0 === THRG_Bunker_Options::state()['confirmed'] );
+THRG_Bunker_Options::set( 'xmlrpc', false );
+check( 'set() is visible on the next read', ! THRG_Bunker_Options::is_on( 'xmlrpc' ) );

@@ -36,12 +36,12 @@ final class THRG_Bunker_Lockdown {
             add_filter( 'wp_headers', array( __CLASS__, 'remove_pingback_header' ) );
         }
         if ( THRG_Bunker_Options::active( 'rest' ) ) {
-            add_filter( 'rest_authentication_errors', array( __CLASS__, 'rest_gate' ), 20 );
+            add_filter( 'rest_authentication_errors', array( __CLASS__, 'rest_gate' ), 110 );
         }
         if ( THRG_Bunker_Options::active( 'usernames' ) ) {
             add_action( 'init', array( __CLASS__, 'author_scan' ), 1 );
             add_filter( 'rest_endpoints', array( __CLASS__, 'hide_user_endpoints' ), 999 );
-            add_filter( 'login_errors', array( __CLASS__, 'generic_login_error' ) );
+            add_filter( 'wp_login_errors', array( __CLASS__, 'generic_login_error' ) );
             add_filter( 'oembed_response_data', array( __CLASS__, 'strip_oembed_author' ) );
             add_filter( 'wp_sitemaps_add_provider', array( __CLASS__, 'drop_user_sitemap' ), 10, 2 );
         }
@@ -193,10 +193,27 @@ final class THRG_Bunker_Lockdown {
     /**
      * Item 4: one message for a wrong username and a wrong password.
      *
-     * @return string
+     * Only the wrong-credential errors are replaced. Every other login message (blocked cookies, an
+     * empty password, a logged-out notice) is left as WordPress wrote it.
+     *
+     * @param mixed $errors Login page errors, normally a WP_Error.
+     * @return mixed
      */
-    public static function generic_login_error() {
-        return esc_html__( 'The username or password you entered is incorrect.', 'thrg-bunker' );
+    public static function generic_login_error( $errors ) {
+        if ( ! is_wp_error( $errors ) ) {
+            return $errors;
+        }
+        $found = false;
+        foreach ( array( 'invalid_username', 'invalid_email', 'incorrect_password' ) as $code ) {
+            if ( in_array( $code, $errors->get_error_codes(), true ) ) {
+                $errors->remove( $code );
+                $found = true;
+            }
+        }
+        if ( $found ) {
+            $errors->add( 'invalid_login', esc_html__( 'The username or password you entered is incorrect.', 'thrg-bunker' ) );
+        }
+        return $errors;
     }
 
     /**
@@ -227,7 +244,7 @@ final class THRG_Bunker_Lockdown {
      * @return void
      */
     public static function refuse_comment() {
-        wp_die( esc_html__( 'Comments are closed.', 'thrg-bunker' ), '', array( 'response' => 403 ) );
+        self::refuse( esc_html__( 'Comments are closed.', 'thrg-bunker' ) );
     }
 
     /**
@@ -315,14 +332,21 @@ final class THRG_Bunker_Lockdown {
         if ( $allowed || THRG_Bunker_Hatch::has_access() ) {
             return;
         }
+        self::refuse( esc_html__( 'Access to this page is limited to approved IP addresses.', 'thrg-bunker' ), esc_html__( 'Access limited', 'thrg-bunker' ) );
+    }
+
+    /**
+     * Refuse a request: Bunker's 404 when item 14 is active, otherwise a 403 message.
+     *
+     * @param string $message Escaped message for the 403 page.
+     * @param string $title   Escaped title for the 403 page.
+     * @return void
+     */
+    private static function refuse( $message, $title = '' ) {
         if ( THRG_Bunker_Options::active( 'stealth' ) ) {
             THRG_Bunker_NotFound::send();
         }
-        wp_die(
-            esc_html__( 'Access to this page is limited to approved IP addresses.', 'thrg-bunker' ),
-            esc_html__( 'Access limited', 'thrg-bunker' ),
-            array( 'response' => 403 )
-        );
+        wp_die( $message, $title, array( 'response' => 403 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Callers pass already-escaped text.
     }
 
     /**
@@ -333,12 +357,14 @@ final class THRG_Bunker_Lockdown {
      * @return bool
      */
     public static function action_allowed( $action, $allowlist ) {
-        $action = sanitize_key( (string) $action );
+        if ( ! is_string( $action ) || ! preg_match( '/^[a-zA-Z0-9_-]+$/D', $action ) ) {
+            return false;
+        }
         if ( '' === $action ) {
             return false;
         }
         foreach ( THRG_Bunker_Options::lines( $allowlist ) as $allowed ) {
-            if ( sanitize_key( $allowed ) === $action ) {
+            if ( $allowed === $action ) {
                 return true;
             }
         }
@@ -355,10 +381,10 @@ final class THRG_Bunker_Lockdown {
             return;
         }
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only the action name is compared with the owner's list; the real handler checks its own nonce.
-        $action = isset( $_REQUEST['action'] ) ? sanitize_key( wp_unslash( $_REQUEST['action'] ) ) : '';
+        $action = isset( $_REQUEST['action'] ) && is_string( $_REQUEST['action'] ) ? wp_unslash( $_REQUEST['action'] ) : '';
         $state  = THRG_Bunker_Options::state();
         if ( ! self::action_allowed( $action, $state['actions_allow'] ) ) {
-            wp_die( esc_html__( 'Forbidden.', 'thrg-bunker' ), '', array( 'response' => 403 ) );
+            self::refuse( esc_html__( 'Forbidden.', 'thrg-bunker' ) );
         }
     }
 

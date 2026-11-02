@@ -5,7 +5,7 @@ thrg_load_plugin();
 
 $file = ABSPATH . '404.html';
 check( 'built-in page when no 404.html exists', false !== strpos( THRG_Bunker_NotFound::html(), 'Page not found' ) && '' === THRG_Bunker_NotFound::find_file() );
-check( 'built-in page carries noindex and the mascot', false !== strpos( THRG_Bunker_NotFound::builtin_html(), 'noindex' ) && false !== strpos( THRG_Bunker_NotFound::builtin_html(), 'thrg-heart-128.png' ) );
+check( 'built-in page carries noindex without a plugin fingerprint', false !== strpos( THRG_Bunker_NotFound::builtin_html(), 'noindex' ) && false === strpos( THRG_Bunker_NotFound::builtin_html(), 'wp-content/plugins' ) );
 check( 'built-in page has no generator tag or theme output', false === stripos( THRG_Bunker_NotFound::builtin_html(), 'generator' ) && false === stripos( THRG_Bunker_NotFound::builtin_html(), 'wp-content/themes' ) );
 
 file_put_contents( $file, '<!doctype html><title>Mine</title><h1>Not here</h1>' );

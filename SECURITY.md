@@ -36,10 +36,12 @@ Test only systems and accounts you own or are explicitly authorized to assess. P
 
 ## Product scope and limitations
 
-Inspections make bounded observations about local settings and filesystem metadata; they do not apply fixes or establish that a site is secure. Optional report history is stored in the site database and can include usernames and file names. Reports can leave the site when an administrator exports or emails them. This is not a malware scanner, firewall or complete vulnerability assessment; no findings means only that the checks performed found none.
+Bunker manages selected WordPress access gates and Apache/LiteSpeed rules for a utility installation behind a static site. It stores its configuration, hashed recovery-link material, temporary browser-approval state and email-throttle timestamps. Approval requests can contain a requesting IP address and user agent, which are included in the administrator approval email. The optional cron watcher and initial welcome also use WordPress mail. Update discovery contacts GitHub, and local health checks request the site's own URLs.
+
+Keep hosting access available when changing server rules. PHP cannot remove those rules when the plugin folder is renamed. HTTPS automation currently targets direct TLS hosting, and hatch creation locks assume one shared host filesystem. Multisite enforcement is disabled. The plugin complements authentication, patching and hosting controls.
 
 Security controls, automated checks and code reviews reduce risk; they are not a guarantee that the plugin or a WordPress site is free of vulnerabilities. Repository documentation describes intended behavior, not independent security certification.
 
-## Verify the reporting route
+## Maintainer verification
 
-The repeatable maintainer check is documented in [Security reporting verification](docs/security-reporting-verification.md). From a local checkout, run `python3 scripts/verify-security-policy.py --local` for document checks, or `python3 scripts/verify-security-policy.py` to also verify the published files and live GitHub setting. A successful check does not prove email delivery or application security.
+Check that the private advisory link above remains enabled for this repository. Verify the fallback address with the maintainer before requesting sensitive material. A public code push does not establish that a security fix is deployed. Consult the README validation status for the current development build.

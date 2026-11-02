@@ -7,7 +7,7 @@
     var reduced = window.matchMedia && window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
 
     function announce( text ) {
-        if ( live ) {
+        if ( live && text ) {
             live.textContent = '';
             live.textContent = text;
         }
@@ -37,14 +37,16 @@
         card.classList.toggle( 'is-off', ! good );
         setText( card, data.text );
         announce( data.message ? data.message + ' ' + data.text : data.text );
+        var note = card.querySelector( '.bunker-note' );
         if ( data.message ) {
-            var note = card.querySelector( '.bunker-note' );
             if ( ! note ) {
                 note = document.createElement( 'p' );
                 note.className = 'bunker-note';
                 card.appendChild( note );
             }
             note.textContent = data.message;
+        } else if ( note ) {
+            note.remove();
         }
     }
 
@@ -97,7 +99,7 @@
             } else {
                 document.execCommand( 'copy' );
             }
-            announce( config.copied || 'Copied.' );
+            announce( config.copied );
         } );
     } );
 }() );

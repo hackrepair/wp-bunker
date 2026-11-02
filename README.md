@@ -8,11 +8,11 @@
 
 If your public website is static HTML (often built and updated by AI) and WordPress only sits behind it for contact forms, mailing-list sign-ups, a chat backend or a database, most of WordPress is unused, yet bots still probe all of it. Bunker switches off everything a utility install does not need, and keeps the few doors your static site actually uses.
 
-Current version: **1.2.0**.
+Development version: **1.2.2 (unreleased)**. Version 1.2.1 was installed directly on the authorized test site. See the validation status below before deployment.
 
 ## The rule that shapes everything
 
-`wp-admin/admin-post.php`, `wp-admin/admin-ajax.php`, `wp-cron.php` and the REST routes you choose are never blocked. A lockdown that breaks your form is a bug.
+Bunker keeps the form endpoints available through the IP gate. The optional known-actions gate restricts their public actions to your exact allowlist. REST routes require authenticated requests or an allowed route prefix. Test the routes and actions used by your static site after changing these controls.
 
 ## What it does
 
@@ -33,15 +33,19 @@ Current version: **1.2.0**.
 13. Optional, off by default: only allow the form actions you list for logged-out visitors
 14. Optional, off by default: answer 404 to everything WordPress-related. It hides WordPress; it does not protect it
 
-Below the options: the **Hatch link** (see below), your site's **404 page** setting, read-only **review checks** (an `admin` account, unused plugins and themes, debug mode, an `error_log` in the web folder, WordPress sharing a folder with `index.html`, and whether item 14 is on), and a "Sharing your static web page on WordPress is not recommended" panel that explains moving WordPress to its own address.
+Below the options: the **Hatch link** (see below), your site's **404 page** setting, read-only **review checks** (an `admin` account, unused plugins and themes, debug mode, an `error_log` in the web folder, WordPress sharing a directory with `index.html`, and whether item 14 is on), and a "Sharing your static web page in the same directory as WordPress is not recommended" panel that explains moving WordPress to its own address.
+
+### HTTPS on Save changes
+
+The HTTPS redirect checkbox is recommended and checked on the first settings form. Save changes applies it after Bunker verifies a certificate-valid HTTPS homepage, an HTTPS admin connection, direct hosting mode and Apache/LiteSpeed support. It uses a 308 server redirect for static pages and WordPress, preserving request paths, queries and methods. An unchecked choice persists. Proxy/Cloudflare and Nginx setups require hosting-level redirect configuration. WordPress home/siteurl and HSTS remain separately configured. Pausing or deactivating Bunker removes its redirect.
 
 ### Left column
 
-A light column beside the settings shows the status at a glance, with **On | Off** switches for Bunker itself, the IP lock and the hatch link. It also has jump links, a pinned **Save changes** button and one warning card. Switching Bunker **Off** pauses every lockdown and removes Bunker's rules from `.htaccess`; your settings are kept. It stacks above the page on narrow screens.
+A light column beside the settings shows the status at a glance, with **On | Off** switches for Bunker itself, the IP lock and the hatch link. It also has jump links, a pinned **Save changes** button and, only when an `index.html` sits next to WordPress, one warning card. Switching Bunker **Off** pauses every lockdown and removes Bunker's rules from `.htaccess`; your settings are kept. It stacks above the page on narrow screens.
 
 ### Hatch link (spare key)
 
-The IP lock is the normal way in. If your address changes, the hatch link is a way back: opening it emails the administrator, and nothing happens until someone presses **Approve** on the confirmation page behind that email link. Approval lets the browser that asked, not the one that clicked, through for 1, 4, 12 or 24 hours. Making a new link or switching the hatch off ends every approved browser at once. Only a hash of the link is stored, and it is shown once. At most one approval email is sent a minute and five an hour. If the email cannot be sent, the hatch stays shut.
+The IP lock is the normal way in. If your address changes, the hatch link is a way back: opening it emails the administrator, and nothing happens until someone presses **Approve** on the confirmation page behind that email link. Approval lets the browser that asked, not the one that clicked, through for 1, 4, 12 or 24 hours. Making a new link or switching the hatch off ends every approved browser at once. Only a hash of the link is stored, and it is shown once. At most one approval email is sent a minute and five an hour. If the email cannot be sent, the hatch stays shut. A pending request stays assigned to its original browser until completion or expiry. Creation uses a host-local filesystem lock, so multi-host installations require shared locking before relying on concurrent-request protection.
 
 ## Nothing happens until you say so
 
@@ -57,9 +61,9 @@ Bunker sends only three kinds of email, with subjects in the THRG format `[domai
 
 ## Safe and recoverable
 
-- Anything that could lock you out is enforced in PHP. Renaming the plugin folder in File Manager removes it at once.
+- Renaming the plugin folder stops PHP enforcement. Server rules remain until removed manually. Keep hosting/File Manager access available for recovery, including any HTTPS redirect loop.
 - `define( 'THRG_BUNKER_SAFE_MODE', true );` in `wp-config.php` pauses every lockdown and removes the server rules until you take the line out.
-- Server rules sit between `# BEGIN THRG Bunker` and `# END THRG Bunker`. They are written atomically after a backup, checked with a loopback request, and rolled back if the site starts returning server errors. On Nginx the rules are shown to copy.
+- Server rules sit between `# BEGIN THRG Bunker` and `# END THRG Bunker`. Writes use per-target locks and unique temporary files. A fresh backup is required before replacing an existing file. Home/login probes and an uploads static-content probe check the affected behavior. Inconclusive checks retain the backup. A failed rollback retains recovery material and reports the failure. Resolve an existing recovery backup before retrying an apply. On Nginx the rules are shown to copy.
 - **Deactivating** Bunker switches everything off: the rules are removed, the hatch link is killed and Bunker is left paused. Your settings are kept, so after you activate it again you switch Bunker **On** when you are ready. Settings are deleted only when you delete the plugin with **Delete all plugin data** ticked.
 - Multisite is not supported yet; Bunker enforces nothing there.
 
@@ -67,10 +71,14 @@ Bunker sends only three kinds of email, with subjects in the THRG format `[domai
 
 Bunker is not a firewall, malware scanner, login-attempt limiter or two-factor plugin, and it does not log visitors.
 
+## Validation status
+
+Seventeen standalone suites run against WordPress stubs. PHP 8.4 syntax checks and JavaScript syntax checks pass. The test site verified the 1.2.0-to-1.2.1 replacement, REST nonce behavior, uploads toggle persistence, case-sensitive action rejection and neutral 404 output. HTTPS behavior in 1.2.2 still needs installation and browser verification. Apache fault injection, true concurrent requests, minimum-PHP execution, disallowed-IP access and full email approval remain pending. Version 1.2.2 has no release or tag from this work.
+
 ## Development
 
 - PHP 7.4 or newer. Avoid PHP 8-only functions.
-- Tests are standalone PHP scripts in `tests/`; run each with `php tests/<name>.php`. `tests/mailpit.php` is not a test: it sends Bunker's three emails to a local Mailpit for a visual check.
+- Tests are standalone PHP scripts in `tests/`; run each with `php tests/<name>.php`. `scripts/mailpit-preview.php` is not a test: it sends Bunker's three emails to a local Mailpit for a visual check.
 - Run the shared PHPCS before committing PHP changes: `/Volumes/BACKUP8TB2/plugins/PHPCS/run-phpcs.sh "$PWD"`.
 - `python3 scripts/build-release.py` builds `dist/thrg-bunker.X.Y.Z.zip` with a single top-level `thrg-bunker/` folder. `PROJECT.md`, `README.md`, `tests/` and `.gitignore` are kept out of the zip.
 

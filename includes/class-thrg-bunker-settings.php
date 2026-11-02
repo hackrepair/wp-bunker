@@ -76,10 +76,7 @@ final class THRG_Bunker_Settings {
         if ( ! current_user_can( 'manage_options' ) || wp_doing_ajax() ) {
             return;
         }
-        $messages = THRG_Bunker_Server_Rules::sync();
-        foreach ( $messages as $message ) {
-            self::flash( 'warning', $message );
-        }
+        self::sync_and_flash();
     }
 
     /**
@@ -108,9 +105,31 @@ final class THRG_Bunker_Settings {
     }
 
     /**
-     * Store a one-time message for the next page load.
+     * Stop with a 403 unless the current user can manage options. Used by every admin-post handler.
      *
-     * @param string $type    success, warning or error.
+     * @return void
+     */
+    public static function require_admin() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'You are not allowed to do this.', 'thrg-bunker' ), '', array( 'response' => 403 ) );
+        }
+    }
+
+    /**
+     * Bring the server rules in line with the settings and show any problem on the next page load.
+     *
+     * @return void
+     */
+    private static function sync_and_flash() {
+        foreach ( THRG_Bunker_Server_Rules::sync() as $note ) {
+            self::flash( 'warning', $note );
+        }
+    }
+
+    /**
+     * Store a one-time message for the next page load. THRG_Bunker_Hatch uses this for its button messages too.
+     *
+     * @param string $type    success, warning, error or info.
      * @param string $message Text (plain; escaped when shown).
      * @return void
      */
@@ -214,9 +233,7 @@ final class THRG_Bunker_Settings {
      */
     public static function handle_confirm() {
         check_admin_referer( 'thrg_bunker_confirm' );
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( esc_html__( 'You are not allowed to do this.', 'thrg-bunker' ), '', array( 'response' => 403 ) );
-        }
+        self::require_admin();
         $decision = isset( $_POST['decision'] ) ? sanitize_key( wp_unslash( $_POST['decision'] ) ) : '';
         if ( 'lock' === $decision ) {
             self::lock_it_down();
@@ -250,9 +267,7 @@ final class THRG_Bunker_Settings {
         if ( ! get_option( THRG_Bunker_Cron::SINCE, 0 ) || empty( $state['confirmed'] ) ) {
             update_option( THRG_Bunker_Cron::SINCE, time(), false );
         }
-        foreach ( THRG_Bunker_Server_Rules::sync() as $note ) {
-            self::flash( 'warning', $note );
-        }
+        self::sync_and_flash();
         self::flash( 'success', __( 'Bunker is on. Review your IP list below: the login lock starts only after you save it.', 'thrg-bunker' ) );
     }
 
@@ -262,37 +277,38 @@ final class THRG_Bunker_Settings {
      * Off pauses every lockdown and removes the rules Bunker wrote to .htaccess; the settings are kept.
      * On switches everything back on (and acts as the first confirmation if there has not been one).
      * The Hatch link switch kills the link in one click (Off) or makes a fresh one, shown once (On).
+     * Pressing the side of a switch that is already current changes nothing and says so.
      *
      * @return void
      */
     public static function handle_master() {
         check_admin_referer( 'thrg_bunker_master' );
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( esc_html__( 'You are not allowed to do this.', 'thrg-bunker' ), '', array( 'response' => 403 ) );
-        }
+        self::require_admin();
         $want  = isset( $_POST['state'] ) ? sanitize_key( wp_unslash( $_POST['state'] ) ) : '';
         $ip    = isset( $_POST['ip_state'] ) ? sanitize_key( wp_unslash( $_POST['ip_state'] ) ) : '';
         $hatch = isset( $_POST['hatch_state'] ) ? sanitize_key( wp_unslash( $_POST['hatch_state'] ) ) : '';
         $state = THRG_Bunker_Options::state();
         if ( in_array( $hatch, array( 'on', 'off' ), true ) ) {
             if ( 'off' === $hatch ) {
-                THRG_Bunker_Hatch::disable();
-                self::flash( 'success', __( 'The hatch is off. The old link and every approved browser stopped working.', 'thrg-bunker' ) );
-            } else {
-                THRG_Bunker_Hatch::create_and_show();
+                THRG_Bunker_Hatch::turn_off();
+            } elseif ( THRG_Bunker_Hatch::switch_on() ) {
                 wp_safe_redirect( self::url() . '#bunker-hatch' );
                 exit;
             }
         } elseif ( in_array( $ip, array( 'on', 'off' ), true ) ) {
-            self::switch_ip_lock( 'on' === $ip );
+            if ( ( 'on' === $ip ) === THRG_Bunker_Options::is_on( 'ip_lock' ) ) {
+                self::flash( 'info', 'on' === $ip ? __( 'The IP lock is already on.', 'thrg-bunker' ) : __( 'The IP lock is already off.', 'thrg-bunker' ) );
+            } else {
+                self::switch_ip_lock( 'on' === $ip );
+            }
+        } elseif ( in_array( $want, array( 'on', 'off' ), true ) && ( 'on' === $want ) === THRG_Bunker_Options::enforcing() ) {
+            self::flash( 'info', 'on' === $want ? __( 'Bunker is already on.', 'thrg-bunker' ) : __( 'Bunker is already off.', 'thrg-bunker' ) );
         } elseif ( 'on' === $want ) {
             if ( empty( $state['confirmed'] ) ) {
                 self::lock_it_down();
             } else {
                 THRG_Bunker_Options::update( array( 'paused' => 0 ) );
-                foreach ( THRG_Bunker_Server_Rules::sync() as $note ) {
-                    self::flash( 'warning', $note );
-                }
+                self::sync_and_flash();
                 self::flash( 'success', __( 'Bunker is on again with your saved settings.', 'thrg-bunker' ) );
             }
         } elseif ( 'off' === $want ) {
@@ -312,9 +328,7 @@ final class THRG_Bunker_Settings {
      */
     private static function switch_ip_lock( $on ) {
         THRG_Bunker_Options::set( 'ip_lock', $on );
-        foreach ( THRG_Bunker_Server_Rules::sync() as $note ) {
-            self::flash( 'warning', $note );
-        }
+        self::sync_and_flash();
         if ( ! $on ) {
             $registry = THRG_Bunker_Options::registry();
             self::flash( 'warning', $registry['ip_lock']['off'] );
@@ -351,7 +365,7 @@ final class THRG_Bunker_Settings {
     public static function clean_actions( $text ) {
         $out = array();
         foreach ( THRG_Bunker_Options::lines( $text ) as $line ) {
-            $key = sanitize_key( $line );
+            $key = preg_match( '/^[a-zA-Z0-9_-]+$/D', $line ) ? $line : '';
             if ( '' !== $key ) {
                 $out[] = $key;
             }
@@ -360,25 +374,28 @@ final class THRG_Bunker_Settings {
     }
 
     /**
-     * Save the form: either the general fields or the IP list.
+     * Save the form. Both buttons save every field, so nothing typed on the page is lost.
+     *
+     * The general fields always save. The IP list is checked and saved when "Save list" was pressed
+     * or when the list or proxy setting was edited; an untouched list is left alone. A rejected IP
+     * list never stops the other fields from saving.
      *
      * @return void
      */
     public static function handle_save() {
         check_admin_referer( 'thrg_bunker_save' );
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( esc_html__( 'You are not allowed to do this.', 'thrg-bunker' ), '', array( 'response' => 403 ) );
-        }
+        self::require_admin();
         $section = isset( $_POST['save_section'] ) ? sanitize_key( wp_unslash( $_POST['save_section'] ) ) : 'general';
 
-        if ( 'ip' === $section ) {
-            self::save_ip();
-        } else {
+        // The page always posts every field. A bare "Save list" post (no other fields) leaves the general settings alone.
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified above.
+        if ( 'ip' !== $section || isset( $_POST['rest_allow'] ) ) {
             self::save_general();
         }
-        foreach ( THRG_Bunker_Server_Rules::sync() as $note ) {
-            self::flash( 'warning', $note );
+        if ( 'ip' === $section || self::ip_edited() ) {
+            self::save_ip();
         }
+        self::sync_and_flash();
         wp_safe_redirect( self::url() );
         exit;
     }
@@ -386,7 +403,23 @@ final class THRG_Bunker_Settings {
     // phpcs:disable WordPress.Security.NonceVerification.Missing -- handle_save() verifies the nonce with check_admin_referer() before either save method runs.
 
     /**
-     * Save the IP list (the "Save list" button).
+     * Whether the posted IP list or proxy setting differs from what is saved.
+     *
+     * @return bool
+     */
+    private static function ip_edited() {
+        if ( ! isset( $_POST['ip_list'] ) ) {
+            return false;
+        }
+        $state  = THRG_Bunker_Options::state();
+        $posted = implode( "\n", THRG_Bunker_Options::lines( sanitize_textarea_field( wp_unslash( $_POST['ip_list'] ) ) ) );
+        $saved  = implode( "\n", THRG_Bunker_Options::lines( (string) $state['ip_list'] ) );
+        $mode   = isset( $_POST['ip_proxy'] ) ? sanitize_key( wp_unslash( $_POST['ip_proxy'] ) ) : (string) $state['ip_proxy'];
+        return $posted !== $saved || $mode !== (string) $state['ip_proxy'];
+    }
+
+    /**
+     * Save the IP list (the "Save list" button, or an edited list on any save).
      *
      * @return void
      */
@@ -455,10 +488,31 @@ final class THRG_Bunker_Settings {
             self::flash( 'warning', __( 'Only allowing known form actions was left off because the allowed list is empty.', 'thrg-bunker' ) );
         }
 
+        $https = ! empty( $_POST['https_redirect'] );
+        if ( $https ) {
+            $https_url = preg_replace( '#^http://#i', 'https://', home_url( '/' ) );
+            $response  = wp_remote_get(
+                $https_url,
+                array(
+					'timeout'     => 8,
+					'redirection' => 0,
+					'sslverify'   => true,
+                )
+            );
+            $https     = THRG_Bunker_Server_Rules::supported() && is_ssl() &&
+                'remote_addr' === THRG_Bunker_Options::state()['ip_proxy'] &&
+                ! is_wp_error( $response ) && 200 === (int) wp_remote_retrieve_response_code( $response );
+            if ( ! $https ) {
+                self::flash( 'warning', __( 'HTTPS redirect was left off. Automatic setup requires direct HTTPS hosting, Apache/LiteSpeed and a verified HTTPS homepage. Use your hosting redirect controls for other configurations.', 'thrg-bunker' ) );
+            }
+        }
+
         $source = isset( $_POST['notfound_source'] ) ? sanitize_key( wp_unslash( $_POST['notfound_source'] ) ) : 'auto';
 
         THRG_Bunker_Options::update(
             array(
+                'https_redirect'  => $https ? 1 : 0,
+                'https_saved'     => 1,
                 'toggles'         => $toggles,
                 'rest_allow'      => self::clean_routes( isset( $_POST['rest_allow'] ) ? sanitize_textarea_field( wp_unslash( $_POST['rest_allow'] ) ) : '' ),
                 'actions_allow'   => $actions,
@@ -504,7 +558,7 @@ final class THRG_Bunker_Settings {
         }
         if ( $here && THRG_Bunker_Options::enforcing() && THRG_Bunker_Options::is_on( 'cron_watch' ) && THRG_Bunker_Cron::stalled() ) {
             echo '<div class="notice notice-warning"><p><strong>' . esc_html__( 'WordPress\'s scheduled tasks have stalled.', 'thrg-bunker' ) . '</strong> ';
-            echo esc_html__( 'They have not run for more than 24 hours, so automatic updates may have stopped. ', 'thrg-bunker' );
+            echo esc_html__( 'They have not run for more than 24 hours, so automatic updates may have stopped.', 'thrg-bunker' ) . ' ';
             echo '<a href="' . esc_url( self::url() . '#bunker-cron' ) . '">' . esc_html__( 'See the fix', 'thrg-bunker' ) . '</a></p></div>';
         }
     }

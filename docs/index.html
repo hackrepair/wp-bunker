@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bunker: a WordPress lockdown for static websites</title>
+<meta name="description" content="Bunker switches off the parts of WordPress that bots and hackers go after, and keeps open the few doors your static website actually uses. Free, by The Hack Repair Guy.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="The Hack Repair Guy's Bunker">
+<meta property="og:description" content="WordPress Utility Lockdown. Your static website faces the public; WordPress stays underground.">
+<meta property="og:url" content="https://hackrepair.github.io/wp-bunker/">
+<meta property="og:image" content="https://hackrepair.github.io/wp-bunker/img/banner.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#1a110d">
+<link rel="icon" type="image/png" href="img/icon-128.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --night: #150e0b;
+  --night-2: #2a1810;
+  --cream: #faf5ea;
+  --ink: #1c2227;
+  --soft: #555c63;
+  --orange: #f39a3a;
+  --rust: #b8400e;
+  --rust-dark: #962f05;
+  --blue: #1a6fa3;
+  --red: #b3261e; --red-t: #fde4e1;
+  --amber: #7a5200; --amber-t: #fff0c7;
+  --green: #1b6a42; --green-t: #dcefe3;
+  --peach: #fff1e6;
+  --line: #e6dfd2;
+  --display: "Bricolage Grotesque", "Arial Black", "Helvetica Neue", Arial, sans-serif;
+  --text: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--cream); color: var(--ink); font: 400 1.125rem/1.6 var(--text); -webkit-font-smoothing: antialiased; }
+img { max-width: 100%; display: block; }
+a { color: var(--blue); text-underline-offset: 3px; }
+a:hover { color: var(--rust); }
+:focus-visible { outline: 3px solid #f6b26b; outline-offset: 3px; border-radius: 4px; }
+.wrap { width: min(1160px, 100% - 48px); margin-inline: auto; }
+h1, h2, h3 { font-family: var(--display); font-weight: 800; }
+
+/* Dark top band */
+.dark { position: relative; color: #f4ece0; background: radial-gradient(1100px 700px at 80% 0%, #45251a 0%, var(--night-2) 40%, var(--night) 85%); overflow: hidden; }
+.dark::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(rgba(243,154,58,.15) 1.2px, transparent 1.4px); background-size: 26px 26px; pointer-events: none; }
+.dark > * { position: relative; }
+.dark a { color: #ffc98e; }
+.dark a:hover { color: #fff; }
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 0; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; color: #fff !important; text-decoration: none; font: 800 1.05rem/1.1 var(--display); letter-spacing: -.01em; }
+.brand img { width: 42px; height: 42px; }
+.top nav { display: flex; gap: 22px; flex-wrap: wrap; }
+.top nav a { color: #f4ece0; font-weight: 700; font-size: 1rem; }
+.top nav a:hover { color: var(--orange); }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr); gap: 56px; align-items: center; padding: 40px 0 96px; }
+.kicker { margin: 0 0 16px; font: 800 .95rem/1 var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--orange); }
+h1 { margin: 0 0 22px; font-size: clamp(2.6rem, 5.6vw, 4.5rem); line-height: 1; letter-spacing: -.035em; color: #fff; }
+h1 em { font-style: normal; color: var(--orange); }
+.lede { margin: 0 0 30px; max-width: 33em; font-size: 1.25rem; color: #e6dccd; }
+.actions { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 28px; border-radius: 10px; background: var(--rust); color: #fff !important; text-decoration: none; font: 800 1.15rem/1 var(--display); letter-spacing: -.005em; box-shadow: 0 2px 0 var(--rust-dark), 0 12px 28px -10px rgba(184, 64, 14, .7); transition: transform .12s ease, background .12s ease; }
+.btn:hover { background: var(--rust-dark); transform: translateY(-1px); }
+.btn:active { transform: translateY(1px); }
+.btn svg { width: 22px; height: 22px; flex: none; }
+.text-link { font-weight: 700; }
+.fine { margin: 22px 0 0; max-width: 33em; font-size: .98rem; color: #b9ab98; }
+
+/* Hero scene: what a bot sees */
+.log { width: 100%; max-width: 540px; margin-inline: auto; background: #f0f0f1; color: var(--ink); border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,.07), 0 40px 80px -30px rgba(0,0,0,.85); font-size: 15px; line-height: 1.35; }
+.l-bar { display: flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; background: #1d2327; }
+.l-bar i { width: 10px; height: 10px; border-radius: 50%; background: #50575e; }
+.l-bar span { margin-left: 10px; color: #a7aaad; font-size: 13px; }
+.l-in { padding: 20px 20px 22px; }
+.l-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.l-head img { width: 48px; height: 48px; }
+.l-head small { display: block; font: 700 10.5px/1 var(--text); letter-spacing: .12em; color: var(--rust); }
+.l-head b { display: block; font: 700 22px/1.15 var(--text); }
+.l-status { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.l-status div { padding: 9px 12px; border-radius: 8px; background: var(--green-t); color: #1b5a39; font-weight: 700; font-size: 13px; animation: rise .5s both; }
+.l-status div:nth-child(1) { animation-delay: .3s; } .l-status div:nth-child(2) { animation-delay: .45s; } .l-status div:nth-child(3) { animation-delay: .6s; }
+.l-status b { display: block; font: 800 20px/1.1 var(--display); }
+.l-list { display: grid; gap: 7px; }
+.l-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; background: #fff; border: 1px solid #dcdcde; border-radius: 6px; font: 600 13.5px/1.3 var(--mono); animation: rise .45s both; }
+.l-row:nth-child(1) { animation-delay: 1.1s; } .l-row:nth-child(2) { animation-delay: 1.35s; } .l-row:nth-child(3) { animation-delay: 1.6s; }
+.l-row:nth-child(4) { animation-delay: 1.85s; } .l-row:nth-child(5) { animation-delay: 2.1s; } .l-row:nth-child(6) { animation-delay: 2.35s; }
+.l-row span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip { flex: none; padding: 4px 9px; border-radius: 999px; font: 700 11.5px/1 var(--text); }
+.chip.r { background: var(--red-t); color: #a1261d; } .chip.g { background: var(--green-t); color: #1b5a39; }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* Sections */
+main section { padding: 96px 0 0; }
+h2 { margin: 0 0 14px; font-size: clamp(1.9rem, 3.8vw, 2.7rem); line-height: 1.06; letter-spacing: -.028em; }
+.sub { margin: 0 0 36px; max-width: 37em; color: var(--soft); }
+
+/* Doors */
+.doors { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; margin: 0; padding: 0; list-style: none; }
+.doors li { padding: 24px 22px; border-radius: 14px; background: #fff; border: 1px solid var(--line); box-shadow: 0 1px 0 rgba(28,34,39,.04); }
+.doors .ic { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 16px; border-radius: 12px; background: var(--peach); }
+.doors svg { width: 30px; height: 30px; stroke: var(--rust); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.doors h3 { margin: 0 0 6px; font-size: 1.2rem; line-height: 1.2; letter-spacing: -.015em; }
+.doors p { margin: 0; font-size: 1rem; color: var(--soft); }
+
+/* Checklist */
+.checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 48px; margin: 0; padding: 30px 34px; list-style: none; background: #fff; border: 1px solid var(--line); border-left: 6px solid var(--rust); border-radius: 12px; }
+.checks li { position: relative; padding-left: 34px; }
+.checks li::before { content: ""; position: absolute; left: 2px; top: .38em; width: 16px; height: 9px; border: solid var(--green); border-width: 0 0 3px 3px; transform: rotate(-45deg); }
+.checks li.opt::before { border-color: #c79a3a; }
+.checks small { color: var(--soft); }
+
+/* Features */
+.feats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
+.feat { display: flex; flex-direction: column; border-radius: 14px; background: #fff; border: 1px solid var(--line); overflow: hidden; }
+.feat .demo { padding: 20px; background: #f3efe7; border-bottom: 1px solid var(--line); font-size: .92rem; line-height: 1.4; min-height: 190px; }
+.feat .txt { padding: 22px 24px 26px; }
+.feat h3 { margin: 0 0 8px; font-size: 1.35rem; line-height: 1.15; letter-spacing: -.015em; }
+.feat p { margin: 0; color: #2f373d; }
+.card { background: #fff; border: 1px solid #dcdcde; border-left: 4px solid var(--green); border-radius: 8px; padding: 12px 14px; }
+.card b { display: block; margin-bottom: 6px; }
+.card .ta { padding: 8px 10px; border: 1px solid #c3c4c7; border-radius: 4px; font: .85rem/1.5 var(--mono); background: #fcfcfc; }
+.card .ok { margin-top: 8px; color: var(--green); font-weight: 700; font-size: .85rem; }
+.mail { background: #fff; border: 1px solid #dcdcde; border-radius: 8px; overflow: hidden; }
+.mail .subj { padding: 10px 12px; font-weight: 700; border-bottom: 1px solid var(--line); }
+.mail .bd { padding: 10px 12px; color: var(--soft); }
+.mail .bt { display: flex; gap: 8px; padding: 0 12px 12px; }
+.mail .bt span { padding: 5px 12px; border-radius: 5px; font-weight: 700; font-size: .85rem; border: 2px solid var(--rust); color: var(--rust); }
+.mail .bt span:first-child { background: var(--green); border-color: var(--green); color: #fff; }
+.ask { background: var(--amber-t); border: 1px solid #e6c46a; border-left: 4px solid #d39b1f; border-radius: 8px; padding: 12px 14px; }
+.ask b { display: block; margin-bottom: 6px; }
+.ask .go { display: inline-block; margin-top: 10px; padding: 6px 14px; border-radius: 5px; background: var(--rust); color: #fff; font-weight: 700; font-size: .85rem; }
+
+/* Trust band */
+.trust { margin-top: 96px; padding: 72px 0; }
+.trust .grid { display: grid; grid-template-columns: auto 1fr; gap: 40px; align-items: start; }
+.trust img { width: 120px; height: 120px; }
+.trust h2 { color: #fff; }
+.trust p { max-width: 42em; color: #e1d6c6; margin: 0 0 16px; }
+.pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 26px; padding: 0; list-style: none; }
+.pills li { padding: 8px 16px; border-radius: 999px; background: rgba(243,154,58,.14); border: 1px solid rgba(243,154,58,.35); color: #ffd7ac; font-weight: 700; font-size: 1rem; }
+.trust .small { font-size: 1rem; color: #b9ab98; }
+
+/* Extra + install */
+.extra { padding: 30px 34px; border-radius: 14px; background: #fff; border: 1px dashed #c9a58c; }
+.extra h3 { margin: 0 0 6px; font-size: 1.35rem; letter-spacing: -.015em; }
+.extra p { margin: 0; max-width: 46em; color: #2f373d; }
+.steps { margin: 0 0 30px; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 20px; max-width: 40em; }
+.steps li { position: relative; padding-left: 58px; counter-increment: step; }
+.steps li::before { content: counter(step); position: absolute; left: 0; top: -2px; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--rust); color: #fff; font: 800 1.15rem/1 var(--display); }
+.below { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; margin-top: 30px; }
+.version { margin: 0; font-size: .98rem; color: var(--soft); }
+code { padding: 1px 6px; border-radius: 4px; background: #efe8d6; font: .92em/1.4 var(--mono); }
+.dark code { background: rgba(243,154,58,.18); color: #ffd7ac; }
+
+/* Footer */
+footer { margin-top: 96px; padding: 44px 0 56px; border-top: 2px solid var(--ink); }
+.foot { display: flex; align-items: flex-start; justify-content: space-between; gap: 28px; flex-wrap: wrap; }
+.foot p { margin: 0 0 6px; }
+.foot .small { font-size: .95rem; color: var(--soft); max-width: 32em; }
+.foot nav { display: flex; gap: 22px; flex-wrap: wrap; }
+.foot nav a { font-weight: 700; }
+
+@media (max-width: 980px) {
+  .hero { grid-template-columns: 1fr; gap: 44px; padding-bottom: 72px; }
+  .doors { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .feats { grid-template-columns: 1fr; }
+  .trust .grid { grid-template-columns: 1fr; gap: 20px; }
+  main section { padding-top: 72px; }
+}
+@media (max-width: 600px) {
+  body { font-size: 1.05rem; }
+  .wrap { width: min(1160px, 100% - 32px); }
+  .top nav { gap: 16px; }
+  .doors, .checks { grid-template-columns: 1fr; }
+  .checks { padding: 22px 20px; }
+  .l-in { padding: 14px; }
+  .l-status b { font-size: 17px; }
+  .l-row { font-size: 12px; }
+  .btn { width: 100%; justify-content: center; }
+  .trust { padding: 56px 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .l-status div, .l-row { animation: none; }
+  .btn { transition: none; }
+}
+</style>
+</head>
+<body>
+<div class="dark">
+  <div class="wrap">
+    <header class="top">
+      <a class="brand" href="./"><img src="img/heart-256.png" alt="" width="42" height="42">The Hack Repair Guy's Bunker</a>
+      <nav aria-label="Site">
+        <a href="#doors">What bots hit</a>
+        <a href="#lockdowns">What it locks</a>
+        <a href="#install">Install</a>
+        <a href="https://github.com/hackrepair/wp-bunker">GitHub</a>
+        <a href="https://github.com/hackrepair/wp-bunker/discussions">Support</a>
+      </nav>
+    </header>
+
+    <div class="hero">
+      <div>
+        <p class="kicker">Free WordPress utility lockdown</p>
+        <h1>Your static site faces the public. <em>WordPress stays underground.</em></h1>
+        <p class="lede">Your website is static HTML, and WordPress just runs the contact form, the sign-ups or the chat behind it. Bunker switches off the parts of WordPress that bots go after, and keeps open the few doors your site actually uses.</p>
+        <div class="actions">
+          <a class="btn" data-download href="https://github.com/hackrepair/wp-bunker/releases/latest">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-5-5m5 5 5-5M5 20h14"/></svg>
+            <span data-download-label>Download Bunker</span>
+          </a>
+          <a class="text-link" href="#lockdowns">See what it locks</a>
+        </div>
+        <p class="fine">Free and open source (GPL-2.0-or-later). Needs WordPress 6.9.4 or newer and PHP 7.4 or newer.</p>
+      </div>
+
+      <div class="log" role="img" aria-label="An example of Bunker at work: Bunker, the IP lock and the hatch link are on. Bot requests for XML-RPC, the login page, author scans, the users API and PHP in uploads are refused, while the site's own contact form gets through.">
+        <div class="l-bar" aria-hidden="true"><i></i><i></i><i></i><span>Settings › Bunker</span></div>
+        <div class="l-in" aria-hidden="true">
+          <div class="l-head"><img src="img/heart-256.png" alt="" width="48" height="48"><div><small>THE HACK REPAIR GUY'S</small><b>Bunker</b></div></div>
+          <div class="l-status"><div><b>On</b>Bunker</div><div><b>On</b>IP lock</div><div><b>On</b>Hatch link</div></div>
+          <div class="l-list">
+            <div class="l-row"><span>POST /xmlrpc.php</span><span class="chip r">Blocked</span></div>
+            <div class="l-row"><span>GET /wp-login.php</span><span class="chip r">Not your IP</span></div>
+            <div class="l-row"><span>GET /?author=1</span><span class="chip r">404</span></div>
+            <div class="l-row"><span>GET /wp-json/wp/v2/users</span><span class="chip r">Blocked</span></div>
+            <div class="l-row"><span>GET /wp-content/uploads/x.php</span><span class="chip r">Blocked</span></div>
+            <div class="l-row"><span>POST admin-post.php · contact_form</span><span class="chip g">Your form</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="wrap">
+    <section id="doors" aria-labelledby="doors-h">
+      <h2 id="doors-h">Bots don't care that nobody visits your WordPress.</h2>
+      <p class="sub">They hit the same doors on every WordPress site, all day, whether anyone uses them or not. Bunker isn't about hiding that WordPress is there. It closes the doors that get hit.</p>
+      <ul class="doors">
+        <li><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>Password guessing</h3><p>Endless login attempts on the login page and through XML-RPC.</p></li>
+        <li><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></div><h3>Username hunting</h3><p>Author scans and the users API, to learn who to guess passwords for.</p></li>
+        <li><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M9 14l-2 2 2 2m6-4 2 2-2 2"/></svg></div><h3>PHP in uploads</h3><p>A dropped file in the uploads folder, run straight from a web address.</p></li>
+        <li><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h3>Spam and sign-ups</h3><p>Comment spam, fake registrations and leftover REST endpoints.</p></li>
+      </ul>
+    </section>
+
+    <section id="lockdowns" aria-labelledby="lockdowns-h">
+      <h2 id="lockdowns-h">What it locks down</h2>
+      <p class="sub">Open <strong>Settings › Bunker</strong>. One checkbox per lockdown, each with a plain-language description that flips to say what just happened when you untick it.</p>
+      <ul class="checks">
+        <li>Hides the WordPress front end with a plain 404</li>
+        <li>Blocks XML-RPC</li>
+        <li>Locks the REST API, except routes you allow</li>
+        <li>Hides usernames from scans, the API and login errors</li>
+        <li>Turns off comments, pingbacks and trackbacks</li>
+        <li>Turns off public registration</li>
+        <li>Turns off application passwords</li>
+        <li>Locks the login page and dashboard to your IP addresses</li>
+        <li>Turns off the built-in code editors</li>
+        <li>Hides version files, logs and folder listings</li>
+        <li>Blocks PHP in the uploads folder</li>
+        <li>Warns you when scheduled tasks stall</li>
+        <li class="opt">Lets through only the form actions you list <small>(optional)</small></li>
+        <li class="opt">Answers 404 to everything WordPress-related <small>(optional)</small></li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="feats-h">
+      <h2 id="feats-h">Locked down, without locking yourself out</h2>
+      <p class="sub">Your forms keep working, you keep a spare key, and nothing changes until you've said it's right for your site.</p>
+      <div class="feats">
+        <article class="feat">
+          <div class="demo" aria-hidden="true">
+            <div class="card"><b>Allowed form and chat actions</b><div class="ta">contact_form<br>newsletter_signup</div><div class="ok">✓ Your static form still sends</div></div>
+          </div>
+          <div class="txt"><h3>Your forms keep working</h3><p>The form endpoints stay reachable from anywhere. List the exact action names your site uses, and allow the REST routes your chat calls.</p></div>
+        </article>
+        <article class="feat">
+          <div class="demo" aria-hidden="true">
+            <div class="mail"><div class="subj">[example.com] [Bunker] Approve or deny a hatch request</div><div class="bd">Someone opened your hatch link from a new address. Approve only if this was you.</div><div class="bt"><span>Approve</span><span>Deny</span></div></div>
+          </div>
+          <div class="txt"><h3>A spare key, the hatch link</h3><p>Address changed? Open your hatch link and Bunker emails you. Only after you press Approve is that browser let in, for 1 to 24 hours.</p></div>
+        </article>
+        <article class="feat">
+          <div class="demo" aria-hidden="true">
+            <div class="ask"><b>Is that how this site works?</b>Nothing is locked yet. Untick anything your static site still needs.<br><span class="go">Lock it down</span></div>
+          </div>
+          <div class="txt"><h3>Nothing happens until you say so</h3><p>Bunker enforces nothing until you choose Lock it down, and the IP lock waits until you've reviewed and saved your list.</p></div>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <div class="dark trust" aria-labelledby="trust-h">
+    <div class="wrap grid">
+      <img src="img/heart-256.png" alt="" width="120" height="120" loading="lazy">
+      <div>
+        <h2 id="trust-h">Easy to switch on. Easy to switch off.</h2>
+        <ul class="pills"><li>Off pauses everything</li><li>Safe-mode line</li><li>Old rules restored on errors</li><li>No visitor logging</li></ul>
+        <p>Switch Bunker Off and every lockdown pauses and its server rules come out, with your settings kept. One line in <code>wp-config.php</code> does the same if you can't reach the dashboard. Server rules live between clearly marked lines, and if your server answers with an error after a change, Bunker puts the old file straight back.</p>
+        <p class="small">Bunker makes no outside requests except update checks against this project's GitHub releases. It is not a firewall, malware scanner, login limiter or two-factor plugin. If you think your site has been hacked, <a href="https://hackrepair.com/">The Hack Repair Guy</a> can help.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section aria-labelledby="extra-h">
+      <div class="extra">
+        <h3 id="extra-h">Even better: give WordPress its own address</h3>
+        <p>If your static homepage sits in the same folder as WordPress, a break-in could rewrite it. Bunker spots this and explains how to move WordPress to its own subdomain or hosting account, so your public site stays out of reach.</p>
+      </div>
+    </section>
+
+    <section id="install" aria-labelledby="install-h">
+      <h2 id="install-h">Install it in a minute</h2>
+      <ol class="steps">
+        <li><strong>Download the zip</strong> from the button below.</li>
+        <li>In WordPress, open <strong>Plugins › Add New › Upload Plugin</strong>, choose the zip and activate it.</li>
+        <li>Open <strong>Settings › Bunker</strong>, untick anything your static site still needs, and choose <strong>Lock it down</strong>.</li>
+        <li>Review your IP list, choose <strong>Save list</strong>, then test your site's form.</li>
+      </ol>
+      <div class="below" style="margin-top:0">
+        <a class="btn" data-download href="https://github.com/hackrepair/wp-bunker/releases/latest">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-5-5m5 5 5-5M5 20h14"/></svg>
+          <span data-download-label>Download Bunker</span>
+        </a>
+        <p class="version" data-version>Free, and later updates arrive on the normal Plugins screen.</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div>
+      <p><strong>Made by The Hack Repair Guy.</strong></p>
+      <p class="small">Free software, released under the GPL. Questions and ideas are welcome in GitHub Discussions. If it helped, you can <a href="https://hackrepair.com/donations/buy-jim-a-coffee">buy Jim a coffee</a>.</p>
+    </div>
+    <nav aria-label="Project links">
+      <a href="https://github.com/hackrepair/wp-bunker">GitHub</a>
+      <a href="https://github.com/hackrepair/wp-bunker/releases">Releases</a>
+      <a href="https://github.com/hackrepair/wp-bunker/discussions">Support</a>
+      <a href="https://hackrepair.com/">hackrepair.com</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // Point every download button at the newest zip. If the lookup fails, the
+  // buttons keep going to the latest release page.
+  fetch('https://api.github.com/repos/hackrepair/wp-bunker/releases/latest', { headers: { Accept: 'application/vnd.github+json' } }).then(function (r) {
+    return r.ok ? r.json() : null;
+  }).then(function (rel) {
+    if (!rel || !rel.assets) { return; }
+    var zip = rel.assets.filter(function (a) { return /^thrg-bunker\.\d+\.\d+\.\d+\.zip$/.test(a.name); })[0];
+    if (!zip) { return; }
+    var version = String(rel.tag_name || '').replace(/^v/, '');
+    document.querySelectorAll('[data-download]').forEach(function (a) { a.href = zip.browser_download_url; });
+    document.querySelectorAll('[data-download-label]').forEach(function (s) { s.textContent = 'Download Bunker ' + version; });
+    var when = rel.published_at ? new Date(rel.published_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+    document.querySelectorAll('[data-version]').forEach(function (p) {
+      p.textContent = 'Latest version ' + version + (when ? ', released ' + when : '') + '. Updates arrive inside WordPress.';
+    });
+  }).catch(function () {});
+})();
+</script>
+</body>
+</html>

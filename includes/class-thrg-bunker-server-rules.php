@@ -36,22 +36,6 @@ final class THRG_Bunker_Server_Rules {
      * @return string[]
      */
     public static function lines( $id ) {
-        $lines = self::lockdown_lines( $id );
-        if ( 'version_files' !== $id ) {
-            return $lines;
-        }
-        $state    = THRG_Bunker_Options::state();
-        $redirect = array();
-        if ( THRG_Bunker_Options::enforcing() && ! empty( $state['https_redirect'] ) ) {
-            $host = wp_parse_url( home_url( '/' ), PHP_URL_HOST );
-            if ( is_string( $host ) && preg_match( '/^[a-z0-9.-]+$/iD', $host ) ) {
-                $redirect = array( 'RewriteEngine On', 'RewriteCond %{HTTPS} !=on', 'RewriteCond %{SERVER_PORT} !^443$', 'RewriteRule ^ https://' . $host . '%{REQUEST_URI} [R=308,L,NE]' );
-            }
-        }
-        return array_merge( $redirect, $lines );
-    }
-
-    private static function lockdown_lines( $id ) {
         $deny = array(
             '<IfModule mod_authz_core.c>',
             '    Require all denied',
@@ -62,9 +46,6 @@ final class THRG_Bunker_Server_Rules {
             '</IfModule>',
         );
         if ( 'version_files' === $id ) {
-            if ( ! empty( THRG_Bunker_Options::state()['https_redirect'] ) && ! THRG_Bunker_Options::active( 'version_files' ) && ! THRG_Bunker_Options::active( 'stealth' ) ) {
-                return array();
-            }
             if ( THRG_Bunker_Options::active( 'stealth' ) ) {
                 return self::stealth_lines();
             }
@@ -389,8 +370,9 @@ final class THRG_Bunker_Server_Rules {
             }
             self::drop_backup( $path );
             return array(
-                'ok'      => false,
-                'message' => __( 'Your server returned an error after the rules were added, so Bunker put your previous file back. This option has been left off.', 'thrg-bunker' ),
+                'ok'          => false,
+                'rolled_back' => true,
+                'message'     => __( 'Your server returned an error after the rules were added, so Bunker put your previous file back. This option has been left off.', 'thrg-bunker' ),
             );
         }
         if ( 'ok' === $check ) {
@@ -556,7 +538,7 @@ final class THRG_Bunker_Server_Rules {
             $want = THRG_Bunker_Options::active( $id );
             if ( 'version_files' === $id && ! $want ) {
                 // Item 14 shares this file and brings its own rules.
-                $want = THRG_Bunker_Options::active( 'stealth' ) || ( THRG_Bunker_Options::enforcing() && ! empty( $state['https_redirect'] ) );
+                $want = THRG_Bunker_Options::active( 'stealth' );
             }
             $sig  = $want ? md5( implode( "\n", self::lines( $id ) ) ) : '';
             $had  = ! empty( $recorded[ $id ] );
@@ -571,10 +553,9 @@ final class THRG_Bunker_Server_Rules {
                     }
                     $recorded[ $id ] = $sig;
                 } else {
-                    if ( 'version_files' === $id ) {
-                        THRG_Bunker_Options::update( array( 'https_redirect' => 0 ) );
+                    if ( ! empty( $result['rolled_back'] ) ) {
+                        THRG_Bunker_Options::set( 'version_files' === $id && THRG_Bunker_Options::active( 'stealth' ) ? 'stealth' : $id, false );
                     }
-                    THRG_Bunker_Options::set( 'version_files' === $id && THRG_Bunker_Options::active( 'stealth' ) ? 'stealth' : $id, false );
                     if ( '' !== $result['message'] ) {
                         $messages[] = $result['message'];
                     }

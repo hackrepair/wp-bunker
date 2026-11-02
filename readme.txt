@@ -4,7 +4,7 @@ Tags: security, hardening, headless, static site, lockdown
 Requires at least: 6.9.4
 Requires PHP: 7.4
 Tested up to: 7.1.3
-Stable tag: 1.2.2
+Stable tag: 1.2.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Support link: https://github.com/hackrepair/wp-bunker/discussions
@@ -15,7 +15,7 @@ WordPress Utility Lockdown. Your static website faces the public; WordPress stay
 
 If your public website is static HTML (often built and updated by AI) and WordPress only sits behind it for contact forms, mailing-list sign-ups, a chat backend or a database, most of WordPress is unused, yet bots still probe all of it. Bunker switches off everything a utility install does not need, and keeps the few doors your static site actually uses.
 
-Development build 1.2.2 is unreleased.
+Development build 1.2.3 is unreleased.
 
 Open **Settings > Bunker**. Most lockdowns are on by default, each with a plain-language description. Untick one and the description flips to tell you what just happened. Each checkbox saves the moment you change it.
 
@@ -44,7 +44,7 @@ Open **Settings > Bunker**. Most lockdowns are on by default, each with a plain-
 
 **Hatch link (spare key).** If your IP address changes, the hatch link is a way back to the login page. Opening it emails the administrator, and only a press of Approve in that email lets the browser that asked through, for 1 to 24 hours. Making a new link or switching the hatch off signs everyone out. Requests are limited to one email a minute and five an hour. A pending request remains assigned to its browser through completion or expiry. Creation locks require a shared host filesystem.
 
-**HTTPS redirect on Save changes.** Recommended and initially checked. Saving settings verifies the HTTPS homepage certificate before adding a 308 redirect for static pages and WordPress on direct Apache/LiteSpeed hosting. Paths, queries and methods are preserved. Unchecking persists your choice. Configure proxy/Cloudflare and Nginx redirects through hosting controls. Pausing or deactivating Bunker removes its redirect.
+**Hosting responsibility.** Configure certificates, HTTPS redirects and HSTS through your hosting provider. Bunker does not manage these settings or require HTTPS as an activation condition.
 
 **Your own 404 page.** Everything Bunker refuses gets a real 404. If your site folder has a `404.html`, Bunker uses it; otherwise a built-in page appears.
 
@@ -66,7 +66,7 @@ Bunker is not a firewall, malware scanner, login-attempt limiter or two-factor p
 
 = Privacy =
 
-Bunker makes no external requests except update checks against GitHub releases. It stores settings, hashed recovery-link material, temporary approval state and email-throttle timestamps in your database. Hatch approval state includes the requesting IP address and user agent, which appear in the approval email. It sends only three kinds of email, all through WordPress's own mail: a one-time welcome to the administrator who activates it, the hatch approval email, and an optional warning when scheduled tasks stall. Subjects look like "[example.com] [Bunker] Welcome". Health checks request your own homepage, login page and a temporary uploads resource. Saving HTTPS preferences also probes the HTTPS homepage with certificate validation.
+Bunker makes no external requests except update checks against GitHub releases. It stores settings, hashed recovery-link material, temporary approval state and email-throttle timestamps in your database. Hatch approval state includes the requesting IP address and user agent, which appear in the approval email. It sends only three kinds of email, all through WordPress's own mail: a one-time welcome to the administrator who activates it, the hatch approval email, and an optional warning when scheduled tasks stall. Subjects look like "[example.com] [Bunker] Welcome". Health checks request your own homepage, login page and a temporary uploads resource.
 
 == Installation ==
 
@@ -111,6 +111,11 @@ Those use XML-RPC. Untick **Block XML-RPC** if you use either.
 PHP lockdowns work everywhere. Bunker shows manual equivalents for its file restrictions. Configure HTTPS redirects through your Nginx hosting controls.
 
 == Changelog ==
+
+= 1.2.3 =
+* Remove the HTTPS setting and automatic redirect rules. HTTPS is the site owner's hosting responsibility.
+* Preserve configured protections when applying rules fails before writing.
+* Ignore legacy HTTPS preferences and omit them on the next settings write.
 
 = 1.2.2 =
 * Recommend an HTTP-to-HTTPS redirect when saving settings, with certificate validation and direct-host checks.

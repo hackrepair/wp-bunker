@@ -130,8 +130,6 @@ $thrg_rail_links      = array(
         <section class="bunker-block" id="bunker-lockdowns">
             <h2 class="bunker-section"><?php esc_html_e( 'Lockdowns', 'thrg-bunker' ); ?></h2>
             <div class="bunker-cards">
-            <p><label><input type="checkbox" name="https_redirect" value="1" <?php checked( empty( $thrg_state['https_saved'] ) || ! empty( $thrg_state['https_redirect'] ) ); ?> /> <?php esc_html_e( 'Redirect HTTP visitors to HTTPS when settings are saved', 'thrg-bunker' ); ?></label></p>
-            <p class="description"><?php esc_html_e( 'Recommended by default. Bunker verifies HTTPS before applying an Apache/LiteSpeed rule that also covers static pages. Direct TLS hosting is required for automatic setup. Save changes to apply.', 'thrg-bunker' ); ?></p>
             <?php foreach ( $thrg_registry as $thrg_id => $thrg_item ) : ?>
                 <?php
                 $thrg_on      = THRG_Bunker_Options::is_on( $thrg_id );

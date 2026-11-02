@@ -488,31 +488,10 @@ final class THRG_Bunker_Settings {
             self::flash( 'warning', __( 'Only allowing known form actions was left off because the allowed list is empty.', 'thrg-bunker' ) );
         }
 
-        $https = ! empty( $_POST['https_redirect'] );
-        if ( $https ) {
-            $https_url = preg_replace( '#^http://#i', 'https://', home_url( '/' ) );
-            $response  = wp_remote_get(
-                $https_url,
-                array(
-					'timeout'     => 8,
-					'redirection' => 0,
-					'sslverify'   => true,
-                )
-            );
-            $https     = THRG_Bunker_Server_Rules::supported() && is_ssl() &&
-                'remote_addr' === THRG_Bunker_Options::state()['ip_proxy'] &&
-                ! is_wp_error( $response ) && 200 === (int) wp_remote_retrieve_response_code( $response );
-            if ( ! $https ) {
-                self::flash( 'warning', __( 'HTTPS redirect was left off. Automatic setup requires direct HTTPS hosting, Apache/LiteSpeed and a verified HTTPS homepage. Use your hosting redirect controls for other configurations.', 'thrg-bunker' ) );
-            }
-        }
-
         $source = isset( $_POST['notfound_source'] ) ? sanitize_key( wp_unslash( $_POST['notfound_source'] ) ) : 'auto';
 
         THRG_Bunker_Options::update(
             array(
-                'https_redirect'  => $https ? 1 : 0,
-                'https_saved'     => 1,
                 'toggles'         => $toggles,
                 'rest_allow'      => self::clean_routes( isset( $_POST['rest_allow'] ) ? sanitize_textarea_field( wp_unslash( $_POST['rest_allow'] ) ) : '' ),
                 'actions_allow'   => $actions,

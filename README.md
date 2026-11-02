@@ -8,7 +8,7 @@
 
 If your public website is static HTML (often built and updated by AI) and WordPress only sits behind it for contact forms, mailing-list sign-ups, a chat backend or a database, most of WordPress is unused, yet bots still probe all of it. Bunker switches off everything a utility install does not need, and keeps the few doors your static site actually uses.
 
-Development version: **1.2.2 (unreleased)**. Version 1.2.1 was installed directly on the authorized test site. See the validation status below before deployment.
+Development version: **1.2.3 (unreleased)**. Version 1.2.1 was installed directly on the authorized test site. See the validation status below before deployment.
 
 ## The rule that shapes everything
 
@@ -35,9 +35,9 @@ Bunker keeps the form endpoints available through the IP gate. The optional know
 
 Below the options: the **Hatch link** (see below), your site's **404 page** setting, read-only **review checks** (an `admin` account, unused plugins and themes, debug mode, an `error_log` in the web folder, WordPress sharing a directory with `index.html`, and whether item 14 is on), and a "Sharing your static web page in the same directory as WordPress is not recommended" panel that explains moving WordPress to its own address.
 
-### HTTPS on Save changes
+### Hosting responsibility
 
-The HTTPS redirect checkbox is recommended and checked on the first settings form. Save changes applies it after Bunker verifies a certificate-valid HTTPS homepage, an HTTPS admin connection, direct hosting mode and Apache/LiteSpeed support. It uses a 308 server redirect for static pages and WordPress, preserving request paths, queries and methods. An unchecked choice persists. Proxy/Cloudflare and Nginx setups require hosting-level redirect configuration. WordPress home/siteurl and HSTS remain separately configured. Pausing or deactivating Bunker removes its redirect.
+Configure certificates, HTTPS redirects and HSTS through your hosting provider. Bunker has no HTTPS switch or automatic redirect and imposes no HTTPS activation requirement. Any legacy HTTPS preferences from 1.2.2 are ignored and dropped on the next state write. Normal managed-rule synchronization replaces Bunker's old block while preserving hosting rules outside its markers. A retained recovery backup can require owner review before a managed-block update proceeds.
 
 ### Left column
 
@@ -73,7 +73,7 @@ Bunker is not a firewall, malware scanner, login-attempt limiter or two-factor p
 
 ## Validation status
 
-Seventeen standalone suites run against WordPress stubs. PHP 8.4 syntax checks and JavaScript syntax checks pass. The test site verified the 1.2.0-to-1.2.1 replacement, REST nonce behavior, uploads toggle persistence, case-sensitive action rejection and neutral 404 output. HTTPS behavior in 1.2.2 still needs installation and browser verification. Apache fault injection, true concurrent requests, minimum-PHP execution, disallowed-IP access and full email approval remain pending. Version 1.2.2 has no release or tag from this work.
+Seventeen standalone suites run against WordPress stubs. PHP 8.4 syntax checks and JavaScript syntax checks pass. The test site verified the 1.2.0-to-1.2.1 replacement, REST nonce behavior, uploads toggle persistence, case-sensitive action rejection and neutral 404 output. HTTPS automation introduced in 1.2.2 was removed in 1.2.3. The rule-backup failure observed on the test site still requires owner-side filesystem review. Apache fault injection, true concurrent requests, minimum-PHP execution, disallowed-IP access and full email approval remain pending. Version 1.2.3 has no release or tag from this work.
 
 ## Development
 

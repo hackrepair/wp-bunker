@@ -43,6 +43,7 @@ $thrg_rail_links      = array(
     'bunker-hatch'     => __( 'Hatch link', 'thrg-bunker' ),
     'bunker-404'       => __( '404 page', 'thrg-bunker' ),
     'bunker-checks'    => __( 'Review checks', 'thrg-bunker' ),
+    'bunker-alerts'    => __( 'Security alerts', 'thrg-bunker' ),
     'bunker-better'    => __( 'Same directory', 'thrg-bunker' ),
 );
 ?>
@@ -348,6 +349,20 @@ $thrg_rail_links      = array(
             </div>
         </section>
 
+        <section class="bunker-block" id="bunker-alerts">
+            <h2 class="bunker-section"><?php esc_html_e( 'Security alerts', 'thrg-bunker' ); ?></h2>
+            <div class="bunker-panel">
+                <p><?php echo esc_html( __( 'Send optional alerts to ', 'thrg-bunker' ) . get_option( 'admin_email' ) ); ?></p>
+                <p><label><input type="checkbox" name="alert_admin" value="1" <?php checked( ! empty( $thrg_state['alert_admin'] ) ); ?> /> <?php esc_html_e( 'Email when an account gains the administrator role', 'thrg-bunker' ); ?></label></p>
+                <p><label><input type="checkbox" name="alert_plugin" value="1" <?php checked( ! empty( $thrg_state['alert_plugin'] ) ); ?> /> <?php esc_html_e( 'Email when a new plugin is installed', 'thrg-bunker' ); ?></label></p>
+                <p><label><input type="checkbox" name="alert_theme" value="1" <?php checked( ! empty( $thrg_state['alert_theme'] ) ); ?> /> <?php esc_html_e( 'Email when a new theme is installed', 'thrg-bunker' ); ?></label></p>
+                <p><?php esc_html_e( 'Save changes to apply. Alerts work after explicit opt-in, including before lockdown confirmation. Pausing Bunker or enabling safe mode stops alerts. WordPress-managed installs are monitored; direct file copies and custom privileged roles are outside this coverage. Multisite is unsupported.', 'thrg-bunker' ); ?></p>
+                <?php if ( ! empty( $thrg_state['alert_mail_error'] ) ) : ?>
+                    <p role="status"><?php esc_html_e( 'A security alert could not be handed to mail. Check mail delivery. The original operation was allowed to finish. No automatic retry is queued.', 'thrg-bunker' ); ?></p>
+                <?php endif; ?>
+            </div>
+        </section>
+
         <section class="bunker-block" id="bunker-better">
             <h2 class="bunker-section">
                 <?php
@@ -382,17 +397,7 @@ $thrg_rail_links      = array(
             </div>
         </section>
 
-        <section class="bunker-block" id="bunker-alerts">
-            <h2><?php esc_html_e( 'Security alerts', 'thrg-bunker' ); ?></h2>
-            <p><?php echo esc_html( __( 'Send optional alerts to ', 'thrg-bunker' ) . get_option( 'admin_email' ) ); ?></p>
-            <p><label><input type="checkbox" name="alert_admin" value="1" <?php checked( ! empty( $thrg_state['alert_admin'] ) ); ?> /> <?php esc_html_e( 'Email when an account gains the administrator role', 'thrg-bunker' ); ?></label></p>
-            <p><label><input type="checkbox" name="alert_plugin" value="1" <?php checked( ! empty( $thrg_state['alert_plugin'] ) ); ?> /> <?php esc_html_e( 'Email when a new plugin is installed', 'thrg-bunker' ); ?></label></p>
-            <p><label><input type="checkbox" name="alert_theme" value="1" <?php checked( ! empty( $thrg_state['alert_theme'] ) ); ?> /> <?php esc_html_e( 'Email when a new theme is installed', 'thrg-bunker' ); ?></label></p>
-            <p><?php esc_html_e( 'Save changes to apply. Alerts work after explicit opt-in, including before lockdown confirmation. Pausing Bunker or enabling safe mode stops alerts. WordPress-managed installs are monitored; direct file copies and custom privileged roles are outside this coverage. Multisite is unsupported.', 'thrg-bunker' ); ?></p>
-            <?php if ( ! empty( $thrg_state['alert_mail_error'] ) ) : ?>
-                <p role="status"><?php esc_html_e( 'A security alert could not be handed to mail. Check mail delivery. The original operation was allowed to finish. No automatic retry is queued.', 'thrg-bunker' ); ?></p>
-            <?php endif; ?>
-        </section>
+
 
         <section class="bunker-block">
             <h2 class="bunker-section"><?php esc_html_e( 'Uninstall', 'thrg-bunker' ); ?></h2>

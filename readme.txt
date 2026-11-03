@@ -13,11 +13,7 @@ WordPress Utility Lockdown. Your static website faces the public; WordPress stay
 
 == Description ==
 
-If your public website is static HTML (often built and updated by AI) and WordPress only sits behind it for contact forms, mailing-list sign-ups, a chat backend or a database, most of WordPress is unused, yet bots still probe all of it. Bunker switches off everything a utility install does not need, and keeps the few doors your static site actually uses.
-
-Open **Settings > Bunker**. Most lockdowns are on by default, each with a plain-language description. Untick one and the description flips to tell you what just happened. Each checkbox saves the moment you change it.
-
-**Forms and API access:** The IP gate exempts form endpoints. The optional known-actions gate restricts logged-out actions to the exact names you allow. REST routes require authentication or an allowlisted prefix.
+Bunker reduces the WordPress features exposed to visitors when WordPress runs behind a static website for forms, mailing lists, chat or other backend services.
 
 **What Bunker locks down:**
 
@@ -38,19 +34,7 @@ Open **Settings > Bunker**. Most lockdowns are on by default, each with a plain-
 
 **Nothing happens until you say so.** The first time you open the page, Bunker asks "Is that how this site works?" and enforces nothing until you choose **Lock it down**. The IP lock waits for a second step: it starts only after you have reviewed and saved your list of addresses.
 
-**Left column and switches.** A light column beside the settings shows the status at a glance, with On | Off switches for Bunker itself, the IP lock and the hatch link, plus jump links and a pinned Save button. Switching Bunker Off pauses every lockdown and removes Bunker's rules from .htaccess, and keeps your settings.
-
-**Hatch link (spare key).** If your IP address changes, the hatch link is a way back to the login page. Opening it emails the administrator, and only a press of Approve in that email lets the browser that asked through, for 1 to 24 hours. Making a new link or switching the hatch off signs everyone out. Requests are limited to one email a minute and five an hour. A pending request remains assigned to its browser through completion or expiry. Creation locks require a shared host filesystem.
-
-**Hosting responsibility.** Configure certificates, HTTPS redirects and HSTS through your hosting provider. Bunker does not manage these settings or require HTTPS as an activation condition.
-
 **Your own 404 page.** Everything Bunker refuses gets a real 404. If your site folder has a `404.html`, Bunker uses it; otherwise a built-in page appears.
-
-**Server rules backup.** When Bunker is holding a backup of a rules file because a health check was inconclusive, Settings shows a short notice with a button to set the backup aside under a unique saved name before retrying. Nothing is shown when there is no backup. The archive action keeps the live rules unchanged and requires a completed health check.
-
-**Review checks.** Below the options, Bunker shows read-only checks: an account named admin, unused plugins and themes, debug mode, an error_log file in the web folder, and whether WordPress shares a directory with your static site's index.html. It never changes any of these for you.
-
-**Sharing your static web page in the same directory as WordPress is not recommended.** A panel explains moving WordPress to its own subdomain, or its own hosting account, so a break-in cannot rewrite your homepage. The red Bad word and the warning card in the left column appear only when an index.html is found next to WordPress.
 
 = What it is not =
 
@@ -60,13 +44,13 @@ Bunker is not a firewall, malware scanner, login-attempt limiter or two-factor p
 
 * Renaming the plugin folder stops PHP enforcement. Remove retained Bunker server-rule blocks manually through hosting access if necessary.
 * Add `define( 'THRG_BUNKER_SAFE_MODE', true );` to wp-config.php to pause every lockdown and remove the server rules until you take the line out.
-* Server rules (items 10 and 11) sit between `# BEGIN THRG Bunker` and `# END THRG Bunker` in `.htaccess`. Bunker verifies a backup, locks the update and writes atomically. It checks home, login and affected uploads content. Inconclusive checks and failed rollback retain recovery material for review. A rollback failure is reported for manual recovery. Deactivating or deleting the plugin removes them. On Nginx, Bunker shows the rules to copy instead.
+* Bunker backs up its managed `.htaccess` changes and checks the site afterward. If verification or rollback fails, it retains recovery material and reports the problem. Nginx restrictions require manual configuration.
 * Deactivating Bunker switches everything off: the rules are removed, the hatch link is killed and Bunker is left paused. Your settings are kept. After you activate it again, switch Bunker On when you are ready. Settings are deleted only if you tick "Delete all plugin data" and then delete the plugin.
 * Multisite networks are not supported yet; Bunker enforces nothing there.
 
 = Privacy =
 
-Bunker makes no external requests except update checks against GitHub releases. It stores settings, hashed recovery-link material, temporary approval state and email-throttle timestamps in your database. Hatch approval state includes the requesting IP address and user agent, which appear in the approval email. It sends only three kinds of email, all through WordPress's own mail: a one-time welcome to the administrator who activates it, the hatch approval email, and an optional warning when scheduled tasks stall. Subjects look like "[example.com] [Bunker] Welcome". Health checks request your own homepage, login page and a temporary uploads resource.
+Bunker checks GitHub for updates and requests its own site URLs for health checks. It stores settings, hashed hatch secrets, temporary approval state and email-throttle timestamps. Hatch requests include the requesting IP address and user agent, which appear in the approval email. WordPress mail sends the one-time welcome, hatch approvals and optional cron warnings.
 
 == Installation ==
 

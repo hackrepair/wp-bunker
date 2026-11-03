@@ -15,6 +15,8 @@ WordPress Utility Lockdown. Your static website faces the public; WordPress stay
 
 Bunker reduces the WordPress features exposed to visitors when WordPress runs behind a static website for forms, mailing lists, chat or other backend services.
 
+Bunker combines controls that reduce unwanted bot access with email notifications for hatch requests and optional stalled-cron warnings. Alerts for newly granted administrator access and new plugin or theme installations are planned for a future version.
+
 **What Bunker locks down:**
 
 * Hides the WordPress front end: visitors and bots get a plain 404 page

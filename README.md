@@ -59,6 +59,12 @@ The IP lock is the normal way in. If your address changes, the hatch link is a w
 
 The first time the page opens, Bunker asks *"Is that how this site works?"* and enforces nothing until you choose **Lock it down**. The IP lock has a second step: it starts only after you have reviewed and saved your list. A light column beside the settings has **On | Off** switches for Bunker itself, the IP lock and the hatch link. Switching Bunker **Off** pauses every lockdown and removes its server rules, and keeps your settings.
 
+## Blocking and security alerts
+
+Bunker reduces unwanted bot access by closing unused WordPress endpoints and restricting administrator access. Email notifications help the owner review access requests and operational problems. The current version sends hatch approval requests, optional stalled-cron warnings and a one-time welcome.
+
+Planned security alerts will notify the site administrator when an account gains administrator access or a new plugin or theme is installed. These three alerts are specified for development and are not available in the current release. Each will have a separate opt-in control and identify the observed change so the owner can investigate an unexpected action.
+
 ## Emails
 
 Bunker sends only three kinds of email, all through WordPress's own mail, with subjects like `[example.com] [Bunker] Welcome`:

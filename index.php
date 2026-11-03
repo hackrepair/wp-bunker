@@ -3,7 +3,7 @@
  * Plugin Name:       The Hack Repair Guy's Bunker
  * Plugin URI:        https://github.com/hackrepair/wp-bunker
  * Description:       WordPress Utility Lockdown. For WordPress running behind a static website: switches off what a utility install does not need and keeps the few doors your site uses.
- * Version:           1.2.8
+ * Version:           1.2.9
  * Author:            The Hack Repair Guy
  * Author URI:        https://hackrepair.com/
  * Update URI:        https://github.com/hackrepair/wp-bunker
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-const THRG_BUNKER_VERSION = '1.2.8';
+const THRG_BUNKER_VERSION = '1.2.9';
 const THRG_BUNKER_FILE    = __FILE__;
 
 /*
@@ -46,6 +46,7 @@ require_once __DIR__ . '/includes/class-thrg-bunker-notfound.php';
 require_once __DIR__ . '/includes/class-thrg-bunker-hatch.php';
 require_once __DIR__ . '/includes/class-thrg-bunker-lockdown.php';
 require_once __DIR__ . '/includes/class-thrg-bunker-mail.php';
+require_once __DIR__ . '/includes/class-thrg-bunker-alerts.php';
 require_once __DIR__ . '/includes/class-thrg-bunker-cron.php';
 require_once __DIR__ . '/includes/class-thrg-bunker-welcome.php';
 require_once __DIR__ . '/includes/class-thrg-bunker-checks.php';
@@ -65,6 +66,7 @@ THRG_Bunker_Lockdown::boot();
 THRG_Bunker_Cron::boot();
 THRG_Bunker_Settings::boot();
 THRG_Bunker_Hatch::boot();
+THRG_Bunker_Alerts::boot();
 
 /**
  * Deactivation switches everything off: the rules Bunker added to .htaccess are removed,

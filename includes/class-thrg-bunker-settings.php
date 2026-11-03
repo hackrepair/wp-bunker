@@ -512,6 +512,9 @@ final class THRG_Bunker_Settings {
                 'rest_allow'      => self::clean_routes( isset( $_POST['rest_allow'] ) ? sanitize_textarea_field( wp_unslash( $_POST['rest_allow'] ) ) : '' ),
                 'actions_allow'   => $actions,
                 'notfound_source' => 'builtin' === $source ? 'builtin' : 'auto',
+                'alert_admin'     => empty( $_POST['alert_admin'] ) ? 0 : 1,
+                'alert_plugin'    => empty( $_POST['alert_plugin'] ) ? 0 : 1,
+                'alert_theme'     => empty( $_POST['alert_theme'] ) ? 0 : 1,
                 'cron_email'      => empty( $_POST['cron_email'] ) ? 0 : 1,
                 'delete_data'     => empty( $_POST['delete_data'] ) ? 0 : 1,
             )

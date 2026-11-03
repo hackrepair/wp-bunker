@@ -4,7 +4,7 @@ Tags: security, hardening, headless, static site, lockdown
 Requires at least: 6.9.4
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 1.2.8
+Stable tag: 1.2.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Support link: https://github.com/hackrepair/wp-bunker/discussions
@@ -15,7 +15,7 @@ WordPress Utility Lockdown. Your static website faces the public; WordPress stay
 
 Bunker reduces the WordPress features exposed to visitors when WordPress runs behind a static website for forms, mailing lists, chat or other backend services.
 
-Bunker combines controls that reduce unwanted bot access with email notifications for hatch requests and optional stalled-cron warnings. Alerts for newly granted administrator access and new plugin or theme installations are planned for a future version.
+Bunker combines controls that reduce unwanted bot access with email notifications for hatch requests and optional stalled-cron warnings. Optional security alerts notify the site administrator when an account gains the administrator role or a new plugin or theme is installed through WordPress. Enable each alert separately under Security alerts and Save changes. Alerts also work before lockdown confirmation. Paused Bunker, safe mode and multisite suppress them.
 
 **What Bunker locks down:**
 
@@ -52,7 +52,7 @@ Bunker is not a firewall, malware scanner, login-attempt limiter or two-factor p
 
 = Privacy =
 
-Bunker checks GitHub for updates and requests its own site URLs for health checks. It stores settings, hashed hatch secrets, temporary approval state and email-throttle timestamps. Hatch requests include the requesting IP address and user agent, which appear in the approval email. WordPress mail sends the one-time welcome, hatch approvals and optional cron warnings.
+Bunker checks GitHub for updates and requests its own site URLs for health checks. It stores settings, hashed hatch secrets, temporary approval state and email-throttle timestamps. Hatch requests include the requesting IP address and user agent, which appear in the approval email. WordPress mail sends the one-time welcome, hatch approvals, optional cron warnings and enabled security alerts. Security-alert messages identify the affected account or software and the actor when available.
 
 == Installation ==
 
@@ -97,6 +97,9 @@ Those use XML-RPC. Untick **Block XML-RPC** if you use either.
 PHP lockdowns work everywhere. Bunker shows manual equivalents for its file restrictions. Configure HTTPS redirects through your Nginx hosting controls.
 
 == Changelog ==
+
+= 1.2.9 =
+* Add opt-in emails for administrator role grants and successful new plugin/theme installations.
 
 = 1.2.8 =
 * Shorten View details by removing the unreleased-build notice and redundant explanatory paragraphs.

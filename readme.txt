@@ -4,7 +4,7 @@ Tags: security, hardening, headless, static site, lockdown
 Requires at least: 6.9.4
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 1.2.7
+Stable tag: 1.2.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Support link: https://github.com/hackrepair/wp-bunker/discussions
@@ -95,6 +95,10 @@ Those use XML-RPC. Untick **Block XML-RPC** if you use either.
 PHP lockdowns work everywhere. Bunker shows manual equivalents for its file restrictions. Configure HTTPS redirects through your Nginx hosting controls.
 
 == Changelog ==
+
+= 1.2.8 =
+* Shorten View details by removing the unreleased-build notice and redundant explanatory paragraphs.
+* Keep feature, installation, recovery, privacy and compatibility information available.
 
 = 1.2.7 =
 * Show the server rules backup section on the settings page only when Bunker is actually holding a backup, in plain words, instead of always listing server paths and statuses.

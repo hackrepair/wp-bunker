@@ -10,7 +10,7 @@ If your public website is static HTML (often built and updated by AI) and WordPr
 
 It is not about pretending WordPress isn't there. It is about closing the doors that get hit.
 
-Current release: **1.2.7**. See [release notes](releases/v1.2.7.md).
+Current release: **1.2.8**. See [release notes](releases/v1.2.8.md).
 
 <p align="center">
   <a href="https://github.com/hackrepair/wp-bunker/releases/latest" title="Download the latest Bunker plugin zip from GitHub"><img src="https://img.shields.io/badge/%E2%AC%87%20%20Download%20the%20latest%20release-b34700?style=for-the-badge&labelColor=b34700" alt="Download the latest release" height="46"></a>

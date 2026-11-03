@@ -52,7 +52,7 @@ check( 'the hatch section has no test button and no unused wrapper', false === s
 // No index.html next to WordPress: the warning does not apply.
 unlink( $index );
 $html = render_page();
-check( 'without an index.html there is no red Bad word and no card', 0 === substr_count( $html, 'bunker-pill-bad' ) && false === strpos( $html, 'bunker-rail-teaser' ) );
+check( 'without an index.html only the sidebar Bad badge remains and no warning card appears', 1 === substr_count( $html, 'bunker-pill-bad' ) && false === strpos( $html, 'bunker-rail-teaser' ) );
 check( 'the Same directory section stays, worded as advice', false !== strpos( $html, 'id="bunker-better"' ) && false !== strpos( $html, 'WordPress is not sharing a directory with your website' ) && false === strpos( $html, 'Right now WordPress shares a directory' ) );
 
 // The hatch note names the real reason.

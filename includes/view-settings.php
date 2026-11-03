@@ -91,7 +91,7 @@ $thrg_rail_links      = array(
                 <?php foreach ( $thrg_rail_links as $thrg_anchor => $thrg_label ) : ?>
                     <li><a href="#<?php echo esc_attr( $thrg_anchor ); ?>">
                     <?php
-                    if ( 'bunker-better' === $thrg_anchor && $thrg_shared ) {
+                    if ( 'bunker-better' === $thrg_anchor ) {
                         echo wp_kses( $thrg_bad_pill, $thrg_pill_tags );
                     }
                     echo esc_html( $thrg_label );

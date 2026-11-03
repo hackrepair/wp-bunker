@@ -1,11 +1,8 @@
 <?php
 require __DIR__ . '/bootstrap.php';
 thrg_load_plugin();
-$GLOBALS['opts'][THRG_Bunker_Options::OPTION] = array( 'confirmed' => 1, 'https_redirect' => 1, 'https_saved' => 1 );
-check( 'legacy HTTPS preferences are ignored', ! isset( THRG_Bunker_Options::state()['https_redirect'] ) );
+$GLOBALS['opts'][THRG_Bunker_Options::OPTION] = array( 'confirmed' => 1 );
 check( 'rules have no HTTPS redirect', false === strpos( implode( "\n", THRG_Bunker_Server_Rules::lines( 'version_files' ) ), 'R=308' ) );
-THRG_Bunker_Options::update( array( 'rest_allow' => '' ) );
-check( 'saving drops legacy HTTPS preferences', ! isset( $GLOBALS['opts'][THRG_Bunker_Options::OPTION]['https_saved'] ) );
 $path = ABSPATH . '.htaccess';
 file_put_contents( $path, "Options -Indexes\n" );
 file_put_contents( THRG_Bunker_Server_Rules::backup_path( $path ), 'retained recovery' );

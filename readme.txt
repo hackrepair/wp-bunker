@@ -4,7 +4,7 @@ Tags: security, hardening, headless, static site, lockdown
 Requires at least: 6.9.4
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 1.2.10
+Stable tag: 1.2.11
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Support link: https://github.com/hackrepair/wp-bunker/discussions
@@ -97,6 +97,9 @@ Those use XML-RPC. Untick **Block XML-RPC** if you use either.
 PHP lockdowns work everywhere. Bunker shows manual equivalents for its file restrictions. Configure HTTPS redirects through your Nginx hosting controls.
 
 == Changelog ==
+
+= 1.2.11 =
+* Tidy-up with no change in behavior: remove an unused debugging method, an unused loop variable, three redundant type casts and the leftover handling of HTTPS settings from an unreleased 1.2.2 build.
 
 = 1.2.10 =
 * Clear the "alert could not be handed to mail" notice after the next successful alert or when the settings are saved, so one transient mail error no longer leaves it showing.

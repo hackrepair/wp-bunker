@@ -39,7 +39,7 @@ class THRG_Bunker_Welcome {
     public static function recipient() {
         $user = function_exists( 'wp_get_current_user' ) ? wp_get_current_user() : null;
         if ( $user && ! empty( $user->user_email ) && is_email( $user->user_email ) ) {
-            return (string) $user->user_email;
+            return $user->user_email;
         }
         $admin = (string) get_option( 'admin_email', '' );
         return is_email( $admin ) ? $admin : '';

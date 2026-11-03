@@ -142,13 +142,4 @@ final class THRG_Bunker_Updater {
 		}
 		return $info;
 	}
-
-	/**
-	 * Expose the underlying checker instance, mostly for debugging.
-	 *
-	 * @return \YahnisElsts\PluginUpdateChecker\v5\Vcs\Api|null
-	 */
-	public function checker() {
-		return $this->checker;
-	}
 }

@@ -20,13 +20,13 @@ class THRG_Bunker_Mail {
      * @return string
      */
     public static function domain() {
-        $url  = (string) home_url();
+        $url  = home_url();
         $host = (string) wp_parse_url( $url, PHP_URL_HOST );
         $port = wp_parse_url( $url, PHP_URL_PORT );
         if ( '' === $host ) {
             $host = (string) wp_parse_url( (string) get_option( 'siteurl', '' ), PHP_URL_HOST );
         }
-        return $host . ( $port ? ':' . (int) $port : '' );
+        return $host . ( $port ? ':' . $port : '' );
     }
 
     /**

@@ -3,7 +3,7 @@
  * Plugin Name:       The Hack Repair Guy's Bunker
  * Plugin URI:        https://github.com/hackrepair/wp-bunker
  * Description:       WordPress Utility Lockdown. For WordPress running behind a static website: switches off what a utility install does not need and keeps the few doors your site uses.
- * Version:           1.2.10
+ * Version:           1.2.11
  * Author:            The Hack Repair Guy
  * Author URI:        https://hackrepair.com/
  * Update URI:        https://github.com/hackrepair/wp-bunker
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-const THRG_BUNKER_VERSION = '1.2.10';
+const THRG_BUNKER_VERSION = '1.2.11';
 const THRG_BUNKER_FILE    = __FILE__;
 
 /*

@@ -200,11 +200,10 @@ final class THRG_Bunker_Options {
         }
         $clean = is_array( $saved ) ? $saved : array();
         $state = array_merge( self::defaults(), $clean );
-        unset( $state['https_redirect'], $state['https_saved'] );
 
         $toggles = self::DEFAULTS;
         if ( isset( $clean['toggles'] ) && is_array( $clean['toggles'] ) ) {
-            foreach ( $toggles as $id => $default ) {
+            foreach ( array_keys( $toggles ) as $id ) {
                 if ( isset( $clean['toggles'][ $id ] ) ) {
                     $toggles[ $id ] = empty( $clean['toggles'][ $id ] ) ? 0 : 1;
                 }

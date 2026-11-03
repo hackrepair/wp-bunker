@@ -16,12 +16,12 @@ Current release: **1.2.11**. See [release notes](releases/v1.2.11.md).
   <a href="https://github.com/hackrepair/wp-bunker/releases/latest" title="Download the latest Bunker plugin zip from GitHub"><img src="https://img.shields.io/badge/%E2%AC%87%20%20Download%20the%20latest%20release-b34700?style=for-the-badge&labelColor=b34700" alt="Download the latest release" height="46"></a>
   <br>
   <sub>Free. Upload the zip in WordPress, and later updates arrive on the Plugins screen.</sub>
-  <br><br>
-  <a href="https://hackrepair.github.io/wp-bunker/" title="The Bunker project page">Visit the Bunker page</a>
 </p>
 
 <p align="center">
   <a href=".github/branding/bunker-settings.png"><img src=".github/branding/bunker-settings.png" alt="Bunker settings page showing the status switches and WordPress lockdown controls" width="100%"></a>
+  <br><br>
+  <a href="https://hackrepair.github.io/wp-bunker/" title="The Bunker project page">Visit the Bunker page</a>
 </p>
 
 ## What it does

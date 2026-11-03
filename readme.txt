@@ -4,7 +4,7 @@ Tags: security, hardening, headless, static site, lockdown
 Requires at least: 6.9.4
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 1.2.11
+Stable tag: 1.2.12
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Support link: https://github.com/hackrepair/wp-bunker/discussions
@@ -13,9 +13,11 @@ WordPress Utility Lockdown. Your static website faces the public; WordPress stay
 
 == Description ==
 
-Bunker reduces the WordPress features exposed to visitors when WordPress runs behind a static website for forms, mailing lists, chat or other backend services.
+You built your website as plain HTML, and WordPress sits quietly behind it to handle the contact form, the newsletter sign-up or the chat. Nobody visits that WordPress. Bots do, every day: the login page, XML-RPC, the REST API, username scans, PHP in the uploads folder.
 
-Bunker combines controls that reduce unwanted bot access with email notifications for hatch requests and optional stalled-cron warnings. Optional security alerts notify the site administrator when an account gains the administrator role or a new plugin or theme is installed through WordPress. Enable each alert separately under Email alerts and Save changes. Set an optional recipient in Send alert emails to, or leave it blank to use the site administration email. Hatch approval recipients are configured separately. Alerts also work before lockdown confirmation. Paused Bunker, safe mode and multisite suppress them. Updates, reinstalls, activation and failed installs send nothing. If mail can't be handed over, Settings shows a notice until the next alert sends or you save. Alerts cover changes made through WordPress, not files copied over SFTP, and an already-compromised administrator can switch them off, so treat an alert as a prompt to look.
+Bunker shuts those doors and keeps open the few your site actually uses. It isn't about pretending WordPress isn't there. It's about closing the doors that get hit.
+
+**Know when something changes.** Optional email alerts, off until you tick them, tell you when an account becomes an administrator or a new plugin or theme is installed through WordPress. Send them to the site's admin email or any address you choose. Updates, reinstalls and failed installs stay quiet. Alerts report rather than prevent, and they don't see files copied in over SFTP.
 
 **What Bunker locks down:**
 
@@ -97,6 +99,9 @@ Those use XML-RPC. Untick **Block XML-RPC** if you use either.
 PHP lockdowns work everywhere. Bunker shows manual equivalents for its file restrictions. Configure HTTPS redirects through your Nginx hosting controls.
 
 == Changelog ==
+
+= 1.2.12 =
+* Rewrite the plugin description and the GitHub README in plainer, friendlier language for people running WordPress behind a static website.
 
 = 1.2.11 =
 * Tidy-up with no change in behavior: remove an unused debugging method, an unused loop variable, three redundant type casts and the leftover handling of HTTPS settings from an unreleased 1.2.2 build.

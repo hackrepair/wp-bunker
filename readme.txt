@@ -15,8 +15,6 @@ WordPress Utility Lockdown. Your static website faces the public; WordPress stay
 
 If your public website is static HTML (often built and updated by AI) and WordPress only sits behind it for contact forms, mailing-list sign-ups, a chat backend or a database, most of WordPress is unused, yet bots still probe all of it. Bunker switches off everything a utility install does not need, and keeps the few doors your static site actually uses.
 
-Development build 1.2.7 is unreleased.
-
 Open **Settings > Bunker**. Most lockdowns are on by default, each with a plain-language description. Untick one and the description flips to tell you what just happened. Each checkbox saves the moment you change it.
 
 **Forms and API access:** The IP gate exempts form endpoints. The optional known-actions gate restricts logged-out actions to the exact names you allow. REST routes require authentication or an allowlisted prefix.

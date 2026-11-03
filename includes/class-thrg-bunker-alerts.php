@@ -78,6 +78,12 @@ final class THRG_Bunker_Alerts {
         self::send( $type, $purpose, $after[ $slug ][0] . ' ' . $after[ $slug ][1] . ' (' . $slug . ')', admin_url( 'plugin' === $type ? 'plugins.php' : 'themes.php' ) );
     }
 
+    /** Recipient for security alerts, independently of hatch approvals. */
+    public static function recipient() {
+        $state = THRG_Bunker_Options::state();
+        return is_string( $state['alert_email'] ) && is_email( $state['alert_email'] ) ? $state['alert_email'] : (string) get_option( 'admin_email', '' );
+    }
+
     private static function send( $type, $purpose, $details, $url ) {
         $actor      = wp_get_current_user();
         $actor_text = $actor->exists() ? $actor->user_login . ' (ID ' . (int) $actor->ID . ')' : __( 'Unavailable or automated', 'thrg-bunker' );
@@ -86,7 +92,7 @@ final class THRG_Bunker_Alerts {
         $body      .= __( 'Actor: ', 'thrg-bunker' ) . sanitize_text_field( $actor_text ) . "\n\n" . $url . "\n\n";
         $body      .= __( 'If this change was unexpected, review it in WordPress.', 'thrg-bunker' );
         try {
-            $sent = wp_mail( get_option( 'admin_email' ), THRG_Bunker_Mail::subject( $purpose ), $body, array( 'Content-Type: text/plain; charset=UTF-8' ) );
+            $sent = wp_mail( self::recipient(), THRG_Bunker_Mail::subject( $purpose ), $body, array( 'Content-Type: text/plain; charset=UTF-8' ) );
         } catch ( Throwable $error ) {
             $sent = false;
         }

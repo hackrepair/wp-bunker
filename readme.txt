@@ -15,7 +15,7 @@ WordPress Utility Lockdown. Your static website faces the public; WordPress stay
 
 Bunker reduces the WordPress features exposed to visitors when WordPress runs behind a static website for forms, mailing lists, chat or other backend services.
 
-Bunker combines controls that reduce unwanted bot access with email notifications for hatch requests and optional stalled-cron warnings. Optional security alerts notify the site administrator when an account gains the administrator role or a new plugin or theme is installed through WordPress. Enable each alert separately under Security alerts and Save changes. Alerts also work before lockdown confirmation. Paused Bunker, safe mode and multisite suppress them.
+Bunker combines controls that reduce unwanted bot access with email notifications for hatch requests and optional stalled-cron warnings. Optional security alerts notify the site administrator when an account gains the administrator role or a new plugin or theme is installed through WordPress. Enable each alert separately under Email alerts and Save changes. Set an optional recipient in Send alert emails to, or leave it blank to use the site administration email. Hatch approval recipients are configured separately. Alerts also work before lockdown confirmation. Paused Bunker, safe mode and multisite suppress them.
 
 **What Bunker locks down:**
 

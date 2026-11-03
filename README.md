@@ -63,7 +63,7 @@ The first time the page opens, Bunker asks *"Is that how this site works?"* and 
 
 Bunker reduces unwanted bot access by closing unused WordPress endpoints and restricting administrator access. Email notifications help the owner review access requests and operational problems. The current version sends hatch approval requests, optional stalled-cron warnings and a one-time welcome.
 
-Development preview **1.2.9** adds three separate opt-in alerts for newly granted administrator roles and new plugin/theme installations through WordPress. Enable them under Security alerts and Save changes. They can run before lockdown confirmation, so a full WordPress test site can use them without enabling the lockdowns. Pausing Bunker, safe mode and multisite suppress these alerts. Direct file copies and custom privileged roles are outside this coverage.
+Development preview **1.2.9** adds three separate opt-in alerts for newly granted administrator roles and new plugin/theme installations through WordPress. Enable them under Email alerts and Save changes. Use Send alert emails to for an optional recipient override, or leave it blank to use the site administration email. This address is separate from hatch approvals. They can run before lockdown confirmation, so a full WordPress test site can use them without enabling the lockdowns. Pausing Bunker, safe mode and multisite suppress these alerts. Direct file copies and custom privileged roles are outside this coverage.
 
 ## Emails
 

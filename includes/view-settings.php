@@ -360,7 +360,11 @@ $thrg_rail_links      = array(
         <section class="bunker-block" id="bunker-alerts">
             <h2 class="bunker-section"><?php esc_html_e( 'Email alerts', 'thrg-bunker' ); ?></h2>
             <div class="bunker-panel">
-                <p><?php echo esc_html( __( 'Send optional alerts to ', 'thrg-bunker' ) . get_option( 'admin_email' ) ); ?></p>
+                <p>
+                    <label for="bunker-alert-email"><strong><?php esc_html_e( 'Send alert emails to', 'thrg-bunker' ); ?></strong></label><br />
+                    <input type="email" id="bunker-alert-email" name="alert_email" class="regular-text" value="<?php echo esc_attr( $thrg_state['alert_email'] ); ?>" placeholder="<?php echo esc_attr( (string) get_option( 'admin_email', '' ) ); ?>" />
+                    <span class="description"><?php echo esc_html( sprintf( /* translators: %s: email address. */ __( 'Leave empty to use the site administrator address (%s).', 'thrg-bunker' ), (string) get_option( 'admin_email', '' ) ) ); ?></span>
+                </p>
                 <p><label><input type="checkbox" name="alert_admin" value="1" <?php checked( ! empty( $thrg_state['alert_admin'] ) ); ?> /> <?php esc_html_e( 'Email when an account gains the administrator role', 'thrg-bunker' ); ?></label></p>
                 <p><label><input type="checkbox" name="alert_plugin" value="1" <?php checked( ! empty( $thrg_state['alert_plugin'] ) ); ?> /> <?php esc_html_e( 'Email when a new plugin is installed', 'thrg-bunker' ); ?></label></p>
                 <p><label><input type="checkbox" name="alert_theme" value="1" <?php checked( ! empty( $thrg_state['alert_theme'] ) ); ?> /> <?php esc_html_e( 'Email when a new theme is installed', 'thrg-bunker' ); ?></label></p>

@@ -175,6 +175,7 @@ final class THRG_Bunker_Options {
             'hatch_failed'          => 0,
             'hatch_failed_at'       => 0,
             'hatch_mail_error'      => 0,
+            'alert_email'           => '',
             'alert_admin'           => 0,
             'alert_plugin'          => 0,
             'alert_theme'           => 0,

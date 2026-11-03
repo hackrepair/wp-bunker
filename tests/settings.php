@@ -229,3 +229,18 @@ THRG_Bunker_Options::update( array( 'rest_allow' => '/keep/v1' ) );
 thrg_catch( array( 'THRG_Bunker_Settings', 'handle_save' ) );
 check( 'a bare Save list post leaves the general settings alone', '/keep/v1' === THRG_Bunker_Options::state()['rest_allow'] );
 unset( $_SERVER['REMOTE_ADDR'] );
+
+// Security alert recipient validation and fallback.
+THRG_Bunker_Options::update( array( 'confirmed' => 0 ) );
+$_POST = array( 'alert_email' => 'alerts@example.com' );
+thrg_catch( array( 'THRG_Bunker_Settings', 'handle_save' ) );
+check( 'security alert recipient saves', 'alerts@example.com' === THRG_Bunker_Alerts::recipient() );
+$_POST = array( 'alert_email' => "bad\r\nBcc: other@example.com" );
+thrg_catch( array( 'THRG_Bunker_Settings', 'handle_save' ) );
+check( 'invalid recipient preserves the previous address', 'alerts@example.com' === THRG_Bunker_Alerts::recipient() );
+$_POST = array( 'alert_email' => array( 'alerts@example.com' ) );
+thrg_catch( array( 'THRG_Bunker_Settings', 'handle_save' ) );
+check( 'array recipient is refused', 'alerts@example.com' === THRG_Bunker_Alerts::recipient() );
+$_POST = array( 'alert_email' => '' );
+thrg_catch( array( 'THRG_Bunker_Settings', 'handle_save' ) );
+check( 'blank recipient uses site administration email', get_option( 'admin_email', '' ) === THRG_Bunker_Alerts::recipient() );

@@ -504,6 +504,16 @@ final class THRG_Bunker_Settings {
             self::flash( 'warning', __( 'Only allowing known form actions was left off because the allowed list is empty.', 'thrg-bunker' ) );
         }
 
+        $alert_email = THRG_Bunker_Options::state()['alert_email'];
+        if ( isset( $_POST['alert_email'] ) ) {
+            $raw_email = is_string( $_POST['alert_email'] ) ? trim( wp_unslash( $_POST['alert_email'] ) ) : null;
+            if ( '' === $raw_email || ( null !== $raw_email && is_email( $raw_email ) ) ) {
+                $alert_email = sanitize_email( $raw_email );
+            } else {
+                self::flash( 'warning', __( 'Enter a valid email address for alerts. The previous recipient was kept.', 'thrg-bunker' ) );
+            }
+        }
+
         $source = isset( $_POST['notfound_source'] ) ? sanitize_key( wp_unslash( $_POST['notfound_source'] ) ) : 'auto';
 
         THRG_Bunker_Options::update(
@@ -512,6 +522,7 @@ final class THRG_Bunker_Settings {
                 'rest_allow'      => self::clean_routes( isset( $_POST['rest_allow'] ) ? sanitize_textarea_field( wp_unslash( $_POST['rest_allow'] ) ) : '' ),
                 'actions_allow'   => $actions,
                 'notfound_source' => 'builtin' === $source ? 'builtin' : 'auto',
+                'alert_email'     => $alert_email,
                 'alert_admin'     => empty( $_POST['alert_admin'] ) ? 0 : 1,
                 'alert_plugin'    => empty( $_POST['alert_plugin'] ) ? 0 : 1,
                 'alert_theme'     => empty( $_POST['alert_theme'] ) ? 0 : 1,

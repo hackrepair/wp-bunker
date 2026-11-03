@@ -43,8 +43,8 @@ $thrg_rail_links      = array(
     'bunker-hatch'     => __( 'Hatch link', 'thrg-bunker' ),
     'bunker-404'       => __( '404 page', 'thrg-bunker' ),
     'bunker-checks'    => __( 'Review checks', 'thrg-bunker' ),
-    'bunker-alerts'    => __( 'Email Alerts', 'thrg-bunker' ),
-    'bunker-better'    => __( 'Same directory check', 'thrg-bunker' ),
+    'bunker-alerts'    => __( 'Email alerts', 'thrg-bunker' ),
+    'bunker-better'    => __( 'Same directory', 'thrg-bunker' ),
     'bunker-uninstall' => __( 'Uninstall', 'thrg-bunker' ),
 );
 ?>
@@ -358,7 +358,7 @@ $thrg_rail_links      = array(
         </section>
 
         <section class="bunker-block" id="bunker-alerts">
-            <h2 class="bunker-section"><?php esc_html_e( 'Security alerts', 'thrg-bunker' ); ?></h2>
+            <h2 class="bunker-section"><?php esc_html_e( 'Email alerts', 'thrg-bunker' ); ?></h2>
             <div class="bunker-panel">
                 <p><?php echo esc_html( __( 'Send optional alerts to ', 'thrg-bunker' ) . get_option( 'admin_email' ) ); ?></p>
                 <p><label><input type="checkbox" name="alert_admin" value="1" <?php checked( ! empty( $thrg_state['alert_admin'] ) ); ?> /> <?php esc_html_e( 'Email when an account gains the administrator role', 'thrg-bunker' ); ?></label></p>

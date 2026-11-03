@@ -45,6 +45,7 @@ $thrg_rail_links      = array(
     'bunker-checks'    => __( 'Review checks', 'thrg-bunker' ),
     'bunker-alerts'    => __( 'Email Alerts', 'thrg-bunker' ),
     'bunker-better'    => __( 'Same directory check', 'thrg-bunker' ),
+    'bunker-uninstall' => __( 'Uninstall', 'thrg-bunker' ),
 );
 ?>
 <div class="wrap thrg-bunker">
@@ -406,7 +407,7 @@ $thrg_rail_links      = array(
 
 
 
-        <section class="bunker-block">
+        <section class="bunker-block" id="bunker-uninstall">
             <h2 class="bunker-section"><?php esc_html_e( 'Uninstall', 'thrg-bunker' ); ?></h2>
             <div class="bunker-panel">
                 <label><input type="checkbox" name="delete_data" value="1" <?php checked( ! empty( $thrg_state['delete_data'] ) ); ?> /> <?php esc_html_e( 'Delete all plugin data from the database when the plugin is deleted', 'thrg-bunker' ); ?></label>

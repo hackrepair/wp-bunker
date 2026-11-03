@@ -43,8 +43,8 @@ $thrg_rail_links      = array(
     'bunker-hatch'     => __( 'Hatch link', 'thrg-bunker' ),
     'bunker-404'       => __( '404 page', 'thrg-bunker' ),
     'bunker-checks'    => __( 'Review checks', 'thrg-bunker' ),
-    'bunker-alerts'    => __( 'Security alerts', 'thrg-bunker' ),
-    'bunker-better'    => __( 'Same directory', 'thrg-bunker' ),
+    'bunker-alerts'    => __( 'Email Alerts', 'thrg-bunker' ),
+    'bunker-better'    => __( 'Same directory check', 'thrg-bunker' ),
 );
 ?>
 <div class="wrap thrg-bunker">
@@ -88,7 +88,14 @@ $thrg_rail_links      = array(
             <p class="bunker-rail-title"><?php esc_html_e( 'On this page', 'thrg-bunker' ); ?></p>
             <ul class="bunker-jump">
                 <?php foreach ( $thrg_rail_links as $thrg_anchor => $thrg_label ) : ?>
-                    <li><a href="#<?php echo esc_attr( $thrg_anchor ); ?>"><?php echo esc_html( $thrg_label ); ?></a></li>
+                    <li><a href="#<?php echo esc_attr( $thrg_anchor ); ?>">
+                    <?php
+                    if ( 'bunker-better' === $thrg_anchor && $thrg_shared ) {
+                        echo wp_kses( $thrg_bad_pill, $thrg_pill_tags );
+                    }
+                    echo esc_html( $thrg_label );
+                    ?>
+                    </a></li>
                 <?php endforeach; ?>
             </ul>
         </nav>

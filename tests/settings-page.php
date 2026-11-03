@@ -35,7 +35,7 @@ check( 'the page renders', false !== strpos( $html, 'class="wrap thrg-bunker"' )
 check( 'the address line was removed', false === strpos( $html, 'Your address right now' ) && false === strpos( $html, 'bunker-myip' ) );
 check( 'the first-run text no longer claims every option is ticked', false !== strpos( $html, 'Every lockdown below that is ticked' ) && false === strpos( $html, 'Every option below' ) );
 check( 'the first-run button is Lock it down', false !== strpos( $html, '>Lock it down<' ) );
-check( 'when WordPress shares a directory the card and heading show the red Bad word', 2 === substr_count( $html, 'bunker-pill-bad' ) && false !== strpos( $html, 'bunker-rail-teaser' ) );
+check( 'when WordPress shares a directory the card and heading show the red Bad word', 3 === substr_count( $html, 'bunker-pill-bad' ) && false !== strpos( $html, 'bunker-rail-teaser' ) );
 check( 'the warning uses the queued wording', false !== strpos( $html, 'Sharing your static web page in the same directory as WordPress is not recommended.' ) && false !== strpos( $html, 'Same directory' ) );
 check( 'the old wording is gone', false === strpos( $html, 'Own address' ) && false === strpos( $html, 'page on WordPress is not recommended' ) );
 check( 'every form is closed and each button points at a real form', substr_count( $html, '<form' ) === substr_count( $html, '</form>' ) );

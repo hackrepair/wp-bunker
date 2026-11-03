@@ -96,7 +96,17 @@ final class THRG_Bunker_Alerts {
         } catch ( Throwable $error ) {
             $sent = false;
         }
-        if ( ! $sent ) {
+        if ( $sent ) {
+            // A later success means mail works again, so the old warning no longer applies.
+            if ( ! empty( THRG_Bunker_Options::state()['alert_mail_error'] ) ) {
+                THRG_Bunker_Options::update(
+                    array(
+                        'alert_mail_error'      => 0,
+                        'alert_mail_error_type' => '',
+                    )
+                );
+            }
+        } else {
             THRG_Bunker_Options::update(
                 array(
 					'alert_mail_error'      => time(),

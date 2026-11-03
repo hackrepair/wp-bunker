@@ -244,3 +244,9 @@ check( 'array recipient is refused', 'alerts@example.com' === THRG_Bunker_Alerts
 $_POST = array( 'alert_email' => '' );
 thrg_catch( array( 'THRG_Bunker_Settings', 'handle_save' ) );
 check( 'blank recipient uses site administration email', get_option( 'admin_email', '' ) === THRG_Bunker_Alerts::recipient() );
+
+// A saved settings page acknowledges an earlier alert-mail failure.
+THRG_Bunker_Options::update( array( 'alert_mail_error' => time(), 'alert_mail_error_type' => 'admin' ) );
+$_POST = array( 'alert_email' => '' );
+thrg_catch( array( 'THRG_Bunker_Settings', 'handle_save' ) );
+check( 'saving the settings clears the alert mail-failure notice', 0 === THRG_Bunker_Options::state()['alert_mail_error'] && '' === THRG_Bunker_Options::state()['alert_mail_error_type'] );

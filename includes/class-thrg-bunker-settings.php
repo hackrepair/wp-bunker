@@ -518,16 +518,19 @@ final class THRG_Bunker_Settings {
 
         THRG_Bunker_Options::update(
             array(
-                'toggles'         => $toggles,
-                'rest_allow'      => self::clean_routes( isset( $_POST['rest_allow'] ) ? sanitize_textarea_field( wp_unslash( $_POST['rest_allow'] ) ) : '' ),
-                'actions_allow'   => $actions,
-                'notfound_source' => 'builtin' === $source ? 'builtin' : 'auto',
-                'alert_email'     => $alert_email,
-                'alert_admin'     => empty( $_POST['alert_admin'] ) ? 0 : 1,
-                'alert_plugin'    => empty( $_POST['alert_plugin'] ) ? 0 : 1,
-                'alert_theme'     => empty( $_POST['alert_theme'] ) ? 0 : 1,
-                'cron_email'      => empty( $_POST['cron_email'] ) ? 0 : 1,
-                'delete_data'     => empty( $_POST['delete_data'] ) ? 0 : 1,
+                'toggles'               => $toggles,
+                'rest_allow'            => self::clean_routes( isset( $_POST['rest_allow'] ) ? sanitize_textarea_field( wp_unslash( $_POST['rest_allow'] ) ) : '' ),
+                'actions_allow'         => $actions,
+                'notfound_source'       => 'builtin' === $source ? 'builtin' : 'auto',
+                'alert_email'           => $alert_email,
+                'alert_admin'           => empty( $_POST['alert_admin'] ) ? 0 : 1,
+                'alert_plugin'          => empty( $_POST['alert_plugin'] ) ? 0 : 1,
+                'alert_theme'           => empty( $_POST['alert_theme'] ) ? 0 : 1,
+                // Saving the settings acknowledges an earlier mail-failure notice; a new failure raises it again.
+                'alert_mail_error'      => 0,
+                'alert_mail_error_type' => '',
+                'cron_email'            => empty( $_POST['cron_email'] ) ? 0 : 1,
+                'delete_data'           => empty( $_POST['delete_data'] ) ? 0 : 1,
             )
         );
         self::flash( 'success', __( 'Settings saved.', 'thrg-bunker' ) );

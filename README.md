@@ -59,19 +59,29 @@ The IP lock is the normal way in. If your address changes, the hatch link is a w
 
 The first time the page opens, Bunker asks *"Is that how this site works?"* and enforces nothing until you choose **Lock it down**. The IP lock has a second step: it starts only after you have reviewed and saved your list. A light column beside the settings has **On | Off** switches for Bunker itself, the IP lock and the hatch link. Switching Bunker **Off** pauses every lockdown and removes its server rules, and keeps your settings.
 
-## Blocking and security alerts
+## Security alerts (new in 1.2.10, not yet released)
 
-Bunker reduces unwanted bot access by closing unused WordPress endpoints and restricting administrator access. Email notifications help the owner review access requests and operational problems. The current version sends hatch approval requests, optional stalled-cron warnings and a one-time welcome.
+Bunker blocks what bots go after. The alerts tell you when something important changes. Under **Email alerts** there are three separate opt-in checkboxes, all off by default:
 
-Development preview **1.2.9** adds three separate opt-in alerts for newly granted administrator roles and new plugin/theme installations through WordPress. Enable them under Email alerts and Save changes. Use Send alert emails to for an optional recipient override, or leave it blank to use the site administration email. This address is separate from hatch approvals. They can run before lockdown confirmation, so a full WordPress test site can use them without enabling the lockdowns. Pausing Bunker, safe mode and multisite suppress these alerts. Direct file copies and custom privileged roles are outside this coverage.
+- an account gains the administrator role (new account, promotion, or the role added to an existing account)
+- a new plugin is installed through WordPress (upload, repository or WP-CLI)
+- a new theme is installed through WordPress
+
+Tick the ones you want and **Save changes**. Alerts go to the site administration email, or to the address you type in **Send alert emails to** (separate from the hatch approval address). Each message names the site, the time, the account or plugin/theme, and who did it when WordPress knows. Updates, reinstalls, activation and failed installs send nothing.
+
+- They work even before you choose **Lock it down**, so you can use them on a site where you haven't turned any lockdown on. A paused Bunker, safe mode and multisite switch them off.
+- If WordPress can't hand an alert to mail, Settings shows a notice. It clears after the next alert that sends, or when you save the settings. Nothing is retried.
+- They watch changes made through WordPress. Files copied over SFTP or File Manager, custom privileged roles and direct database edits are outside their reach.
+- They report; they don't prevent. Someone who already controls an administrator account can switch alerts off or change the recipient, so treat an alert as a prompt to look, not as protection.
 
 ## Emails
 
-The released version sends three kinds of email, all through WordPress's own mail, with subjects like `[example.com] [Bunker] Welcome`:
+Bunker sends mail only through WordPress's own mail, with subjects like `[example.com] [Bunker] Welcome`:
 
 - **Welcome**, once, to the administrator who first activates it.
 - **Approve or deny a hatch request**, each time someone opens the hatch link from outside your IP list.
 - **Scheduled tasks stalled**, optional and off by default, at most once a week.
+- **Security alerts**, optional and off by default (1.2.10 and later): administrator access added, new plugin installed, new theme installed.
 
 ## Safe and recoverable
 
@@ -84,7 +94,7 @@ The released version sends three kinds of email, all through WordPress's own mai
 
 ## Privacy and scope
 
-Bunker makes no outside requests except update checks against this repository's GitHub releases. The development alerts include affected account or software identifiers and the actor in administrator email. Its health checks request only your own home page, login page and a temporary uploads file. Settings, hashed hatch material and short-lived approval state stay in your WordPress database. A hatch request records the requesting IP address and browser, which appear in the approval email.
+Bunker makes no outside requests except update checks against this repository's GitHub releases. Security alert emails (1.2.10 and later) include the affected account or plugin/theme and the person who made the change. Its health checks request only your own home page, login page and a temporary uploads file. Settings, hashed hatch material and short-lived approval state stay in your WordPress database. A hatch request records the requesting IP address and browser, which appear in the approval email.
 
 Bunker is not a firewall, malware scanner, login-attempt limiter or two-factor plugin, and it does not log visitors. Configure certificates, HTTPS redirects and HSTS through your hosting provider.
 

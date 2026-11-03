@@ -4,7 +4,7 @@ Tags: security, hardening, headless, static site, lockdown
 Requires at least: 6.9.4
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 1.2.9
+Stable tag: 1.2.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Support link: https://github.com/hackrepair/wp-bunker/discussions
@@ -15,7 +15,7 @@ WordPress Utility Lockdown. Your static website faces the public; WordPress stay
 
 Bunker reduces the WordPress features exposed to visitors when WordPress runs behind a static website for forms, mailing lists, chat or other backend services.
 
-Bunker combines controls that reduce unwanted bot access with email notifications for hatch requests and optional stalled-cron warnings. Optional security alerts notify the site administrator when an account gains the administrator role or a new plugin or theme is installed through WordPress. Enable each alert separately under Email alerts and Save changes. Set an optional recipient in Send alert emails to, or leave it blank to use the site administration email. Hatch approval recipients are configured separately. Alerts also work before lockdown confirmation. Paused Bunker, safe mode and multisite suppress them.
+Bunker combines controls that reduce unwanted bot access with email notifications for hatch requests and optional stalled-cron warnings. Optional security alerts notify the site administrator when an account gains the administrator role or a new plugin or theme is installed through WordPress. Enable each alert separately under Email alerts and Save changes. Set an optional recipient in Send alert emails to, or leave it blank to use the site administration email. Hatch approval recipients are configured separately. Alerts also work before lockdown confirmation. Paused Bunker, safe mode and multisite suppress them. Updates, reinstalls, activation and failed installs send nothing. If mail can't be handed over, Settings shows a notice until the next alert sends or you save. Alerts cover changes made through WordPress, not files copied over SFTP, and an already-compromised administrator can switch them off, so treat an alert as a prompt to look.
 
 **What Bunker locks down:**
 
@@ -97,6 +97,11 @@ Those use XML-RPC. Untick **Block XML-RPC** if you use either.
 PHP lockdowns work everywhere. Bunker shows manual equivalents for its file restrictions. Configure HTTPS redirects through your Nginx hosting controls.
 
 == Changelog ==
+
+= 1.2.10 =
+* Clear the "alert could not be handed to mail" notice after the next successful alert or when the settings are saved, so one transient mail error no longer leaves it showing.
+* Document the security alerts everywhere: what they cover, what they miss, how the mail-failure notice behaves and that a compromised administrator can switch them off.
+* Add tests for the security alerts: hostile account and plugin names, recipient fallback, suppression while paused or on multisite, reinstalls, updates, failed installs and mail-failure bookkeeping.
 
 = 1.2.9 =
 * Add opt-in emails for administrator role grants and successful new plugin/theme installations.

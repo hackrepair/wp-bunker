@@ -68,6 +68,7 @@ function thrg_bunker_companion_plugin_info( $result, $action, $args ) {
     foreach ( thrg_bunker_companions() as $item ) {
         $html .= '<div class="thrg_bunker-toolkit-card"><h3>' . esc_html( $item['name'] ) . '</h3><p>' . esc_html( $item['desc'] ) . '</p><p><a href="' . esc_url( $item['url'] ) . '" target="_blank" rel="noopener noreferrer">Explore ' . esc_html( $item['name'] ) . ' &rarr;</a></p></div>';
     }
+    $html .= '<p>' . esc_html__( 'If you found these plugins helpful, please consider a donation.', 'thrg-bunker' ) . ' <a href="https://hackrepair.com/donations/buy-jim-a-coffee" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Buy Jim a cup of coffee', 'thrg-bunker' ) . '</a>.</p>';
     $html .= '<p class="thrg_bunker-toolkit-note">Each plugin works independently. Links open in a new tab.</p></div>';
 
     $result->sections['other_THRG_plugins'] = $html;

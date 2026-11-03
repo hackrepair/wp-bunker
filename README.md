@@ -10,7 +10,7 @@ If your public website is static HTML (often built and updated by AI) and WordPr
 
 It is not about pretending WordPress isn't there. It is about closing the doors that get hit.
 
-Current release: **1.2.8**. See [release notes](releases/v1.2.8.md).
+Current release: **1.2.10**. See [release notes](releases/v1.2.10.md).
 
 <p align="center">
   <a href="https://github.com/hackrepair/wp-bunker/releases/latest" title="Download the latest Bunker plugin zip from GitHub"><img src="https://img.shields.io/badge/%E2%AC%87%20%20Download%20the%20latest%20release-b34700?style=for-the-badge&labelColor=b34700" alt="Download the latest release" height="46"></a>
@@ -59,7 +59,7 @@ The IP lock is the normal way in. If your address changes, the hatch link is a w
 
 The first time the page opens, Bunker asks *"Is that how this site works?"* and enforces nothing until you choose **Lock it down**. The IP lock has a second step: it starts only after you have reviewed and saved your list. A light column beside the settings has **On | Off** switches for Bunker itself, the IP lock and the hatch link. Switching Bunker **Off** pauses every lockdown and removes its server rules, and keeps your settings.
 
-## Security alerts (new in 1.2.10, not yet released)
+## Security alerts (new in 1.2.10)
 
 Bunker blocks what bots go after. The alerts tell you when something important changes. Under **Email alerts** there are three separate opt-in checkboxes, all off by default:
 

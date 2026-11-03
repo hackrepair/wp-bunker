@@ -20,6 +20,10 @@ Current release: **1.2.8**. See [release notes](releases/v1.2.8.md).
   <a href="https://hackrepair.github.io/wp-bunker/" title="The Bunker project page">Visit the Bunker page</a>
 </p>
 
+<p align="center">
+  <a href=".github/branding/bunker-settings.png"><img src=".github/branding/bunker-settings.png" alt="Bunker settings page showing the status switches and WordPress lockdown controls" width="100%"></a>
+</p>
+
 ## What it does
 
 **Settings → Bunker** has one checkbox per lockdown. Each saves the moment you change it. Untick one and its description flips to say what just happened, and the card turns amber. Every lockdown is on by default, except the two optional ones at the end.

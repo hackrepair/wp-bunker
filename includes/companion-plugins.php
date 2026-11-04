@@ -44,6 +44,11 @@ function thrg_bunker_companions() {
             'desc' => 'Move unused plugins out of the Plugins list without deleting them, and restore their files when needed.',
             'url'  => 'https://wordpress.org/plugins/hackrepair-plugin-archiver/',
         ),
+        array(
+            'name' => 'Stickies',
+            'desc' => 'Pin sticky notes to any spot on any page of your site, mention a teammate, and mark the note resolved when the fix is done.',
+            'url'  => 'https://github.com/hackrepair/thrg-stickies',
+        ),
     );
 }
 
@@ -64,7 +69,7 @@ function thrg_bunker_companion_plugin_info( $result, $action, $args ) {
     wp_enqueue_style( 'thrg_bunker-plugin-details', plugins_url( 'assets/css/thrg_bunker-plugin-details.css', dirname( __DIR__ ) . '/index.php' ), array(), THRG_BUNKER_VERSION );
     $result->version = THRG_BUNKER_VERSION;
 
-    $html = '<div class="thrg_bunker-toolkit"><p class="thrg_bunker-toolkit-intro">More tools from The Hack Repair Guy</p><p>Six focused ways to look after your WordPress site. Use only what you need.</p>';
+    $html = '<div class="thrg_bunker-toolkit"><p class="thrg_bunker-toolkit-intro">More tools from The Hack Repair Guy</p><p>Seven focused ways to look after your WordPress site. Use only what you need.</p>';
     foreach ( thrg_bunker_companions() as $item ) {
         $html .= '<div class="thrg_bunker-toolkit-card"><h3>' . esc_html( $item['name'] ) . '</h3><p>' . esc_html( $item['desc'] ) . '</p><p><a href="' . esc_url( $item['url'] ) . '" target="_blank" rel="noopener noreferrer">Explore ' . esc_html( $item['name'] ) . ' &rarr;</a></p></div>';
     }

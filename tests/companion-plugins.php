@@ -1,5 +1,5 @@
 <?php
-// Companion tab contract: six distinct companions, no network requests, isolation.
+// Companion tab contract: seven distinct companions, no network requests, isolation.
 require __DIR__ . '/bootstrap.php';
 function wp_enqueue_style( ...$args ) {}
 thrg_load_plugin();
@@ -10,14 +10,15 @@ $info = (object) array( 'version' => '9.9.9', 'sections' => array( 'description'
 $out  = $fn( $info, 'plugin_information', $args );
 $html = $out->sections['other_THRG_plugins'] ?? '';
 
-check( 'six companions', 6 === substr_count( $html, '<h3>' ) );
+check( 'seven companions', 7 === substr_count( $html, '<h3>' ) );
 check( 'Bunker does not list itself', false === strpos( $html, '<h3>Bunker</h3>' ) );
+check( 'Stickies is listed', false !== strpos( $html, '<h3>Stickies</h3>' ) && false !== strpos( $html, 'https://github.com/hackrepair/thrg-stickies' ) );
 check( 'Site Inspector is listed', false !== strpos( $html, '<h3>Site Inspector</h3>' ) );
 check( 'original sections kept', 'Keep description' === $out->sections['description'] && 'Keep changelog' === $out->sections['changelog'] );
 preg_match_all( '/<a href="([^"]+)"/', $html, $matches );
-check( 'six companions and one donation destination', 7 === count( array_unique( $matches[1] ) ) );
+check( 'seven companions and one donation destination', 8 === count( array_unique( $matches[1] ) ) );
 check( 'Plugin Archiver links to WordPress.org', false !== strpos( $html, 'https://wordpress.org/plugins/hackrepair-plugin-archiver/' ) );
-check( 'every link opens safely in a new tab', 7 === substr_count( $html, 'target="_blank" rel="noopener noreferrer"' ) );
+check( 'every link opens safely in a new tab', 8 === substr_count( $html, 'target="_blank" rel="noopener noreferrer"' ) );
 $again = $fn( $out, 'plugin_information', $args );
 check( 'repeated filters do not duplicate content', $again->sections['other_THRG_plugins'] === $html );
 $foreign = (object) array( 'sections' => array( 'description' => 'Other' ) );

@@ -4,7 +4,7 @@ Tags: security, hardening, headless, static site, lockdown
 Requires at least: 6.9.4
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 1.2.12
+Stable tag: 1.2.13
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Support link: https://github.com/hackrepair/wp-bunker/discussions
@@ -99,6 +99,9 @@ Those use XML-RPC. Untick **Block XML-RPC** if you use either.
 PHP lockdowns work everywhere. Bunker shows manual equivalents for its file restrictions. Configure HTTPS redirects through your Nginx hosting controls.
 
 == Changelog ==
+
+= 1.2.13 =
+* The Other THRG Plugins tab in View Details now also lists Stickies.
 
 = 1.2.12 =
 * Rewrite the plugin description and the GitHub README in plainer, friendlier language for people running WordPress behind a static website.

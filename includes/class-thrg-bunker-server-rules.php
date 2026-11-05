@@ -60,7 +60,7 @@ final class THRG_Bunker_Server_Rules {
         }
         if ( 'uploads_php' === $id ) {
             return array_merge(
-                array( '<FilesMatch "\.(?:php[0-9]?|phtml|phar|pht|phps)$">' ),
+                array( '<FilesMatch "(?i)\.(?:php[0-9]*|phtml|phar|pht|phps)(?:\.|$)">' ),
                 $deny,
                 array( '</FilesMatch>' )
             );
@@ -107,7 +107,7 @@ final class THRG_Bunker_Server_Rules {
             return "location ~* ^/(readme\\.html|license\\.txt|wp-config-sample\\.php|error_log|debug\\.log|php_errorlog)\$ {\n    deny all;\n}\nautoindex off;";
         }
         if ( 'uploads_php' === $id ) {
-            return "location ~* ^/wp-content/uploads/.*\\.(php[0-9]?|phtml|phar|pht|phps)\$ {\n    deny all;\n}";
+            return "location ~* ^/wp-content/uploads/.*\\.(php[0-9]*|phtml|phar|pht|phps)(\\.|\$) {\n    deny all;\n}";
         }
         return '';
     }

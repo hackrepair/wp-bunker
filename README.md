@@ -18,7 +18,7 @@ The bots do. Every day they knock on the login page, poke at XML-RPC, ask the RE
 
 It isn't about pretending WordPress isn't there. It's about closing the doors that get hit.
 
-Current release: **1.2.13**. See [release notes](releases/v1.2.13.md).
+Current release: **1.2.14**. See [release notes](releases/v1.2.14.md).
 
 <p align="center">
   <a href="https://github.com/hackrepair/wp-bunker/releases/latest" title="Download the latest Bunker plugin zip from GitHub"><img src="https://img.shields.io/badge/%E2%AC%87%20%20Download%20the%20latest%20release-b34700?style=for-the-badge&labelColor=b34700" alt="Download the latest release" height="46"></a>
@@ -66,7 +66,7 @@ Further down the page you'll find the **hatch link**, a choice of **404 page** (
 
 ## Nothing happens until you say so
 
-The first time you open the page, Bunker shows you what it's about to do and asks *"Is that how this site works?"* Nothing is enforced until you press **Lock it down**.
+The first time you open the page, Bunker shows you what it's about to do and waits for your confirmation. Nothing is enforced until you press **Lock it down**.
 
 The IP lock has one more step. It only starts after you've looked over your address list and saved it, so you can't lock yourself out by accident.
 
@@ -151,3 +151,11 @@ Made by [The Hack Repair Guy](https://hackrepair.com/ "The Hack Repair Guy: Word
 ## Changelog
 
 See the **Changelog** section of [`readme.txt`](readme.txt).
+
+## Hatch and uploads hardening in 1.2.14
+
+Uploads rules also deny PHP extension components before another dot and uppercase variants, such as `shell.php.jpg` and `shell.PHP.JPG`. Nginx guidance includes the same matching. Nginx owners must adapt the uploads path and place the deny rule before overlapping PHP locations. Custom server mappings still need hosting review.
+
+Hatch requests use a salt-derived, connection-owned MySQL/MariaDB advisory lock rather than a predictable shared temporary file. Requests fail closed if the safety lock is busy or unavailable. The lock is released at request shutdown or database disconnect; no expiring option or lock file is left behind. Workers must share the same database server and keep lock queries on one session; database clustering/proxy setups need verification.
+
+Hatch cookies, review links and redirects use HTTPS when WordPress detects TLS, has an HTTPS site URL, or requires SSL administration. Untrusted forwarded headers are not used. Configure proxy TLS handling with your host. HTTP remains available with an advisory because approval links and cookies can be intercepted. Bunker does not change site URLs or hosting redirects. Keep hatch query secrets out of logs, screenshots and shared diagnostic evidence; HTTPS does not conceal URLs from the receiving server or browser history.

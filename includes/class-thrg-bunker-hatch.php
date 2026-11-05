@@ -76,7 +76,7 @@ final class THRG_Bunker_Hatch {
      * @return string
      */
     public static function link( $token ) {
-        return add_query_arg( array( 'thrg_hatch' => $token ), site_url( 'wp-login.php', 'login' ) );
+        return add_query_arg( array( 'thrg_hatch' => $token ), self::login_url() );
     }
 
     /**
@@ -280,17 +280,16 @@ final class THRG_Bunker_Hatch {
             self::go_wait();
         }
 
-        // Hold the creation lock through mail delivery and release it at request shutdown.
-        // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
-        $lock = fopen( sys_get_temp_dir() . '/thrg-hatch-' . hash( 'sha256', ABSPATH ) . '.lock', 'c' );
-        if ( false === $lock || ! flock( $lock, LOCK_EX | LOCK_NB ) ) {
-            if ( is_resource( $lock ) ) {
-                // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
-                fclose( $lock );
-            }
-            self::page( __( 'Please try again', 'thrg-bunker' ), '<p>' . esc_html__( 'An approval request is being processed.', 'thrg-bunker' ) . '</p>' );
+        // Keep creation and email throttling serialized until this request ends.
+        $release = self::creation_lock();
+        if ( false === $release ) {
+            self::page( __( 'Please try again', 'thrg-bunker' ), '<p>' . esc_html__( 'An approval request is being processed, or the database could not acquire its safety lock. Please try again shortly.', 'thrg-bunker' ) . '</p>' );
         }
         try {
+            // own_request() may have cached an earlier value before acquiring the lock.
+            wp_cache_delete( self::REQUEST_OPTION, 'options' );
+            wp_cache_delete( self::LOG_OPTION, 'options' );
+            wp_cache_delete( 'notoptions', 'options' );
             $active = self::stored_request();
             if ( $active ) {
                 $minutes = max( 1, (int) ceil( ( (int) $active['expires'] - time() ) / MINUTE_IN_SECONDS ) );
@@ -342,10 +341,58 @@ final class THRG_Bunker_Hatch {
             self::cookie( self::REQUEST_COOKIE, $browser, time() + self::REQUEST_TTL );
             self::go_wait();
         } finally {
-            flock( $lock, LOCK_UN );
-            // phpcs:ignore WordPress.WP.AlternativeFunctions -- Native filesystem operations provide locking and checked recovery outcomes.
-            fclose( $lock );
+            $release();
         }
+    }
+
+    /**
+     * Acquire a connection-owned MySQL/MariaDB lock without shared temporary files.
+     *
+     * The salt-derived name cannot be predicted by another hosting account. Locks
+     * release on disconnect; shutdown also covers exit paths and persistent connections.
+     * All requests must use the same database server/session for this operation.
+     *
+     * @return callable|false Idempotent release callback, or false on contention/error.
+     */
+    private static function creation_lock() {
+        global $wpdb;
+        $name = 'thrg-hatch-' . wp_hash( $wpdb->options . '|creation-lock' );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Connection-owned advisory locks have no WordPress API or cacheable result.
+        $locked = $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 0)', $name ) );
+        if ( '1' !== (string) $locked ) {
+            return false;
+        }
+        $held    = true;
+        $release = static function () use ( $wpdb, $name, &$held ) {
+            if ( $held ) {
+                $held = false;
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Only the owning database connection can release this advisory lock.
+                $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $name ) );
+            }
+        };
+        register_shutdown_function( $release );
+        return $release;
+    }
+
+    /**
+     * Whether hatch cookies should be restricted to HTTPS.
+     *
+     * Use the stored URL, since site_url() can infer its scheme from the request.
+     * Forwarded headers are deliberately left to trusted hosting configuration.
+     *
+     * @return bool
+     */
+    public static function secure_transport() {
+        return is_ssl() || force_ssl_admin() || 'https' === strtolower( (string) wp_parse_url( (string) get_option( 'siteurl', '' ), PHP_URL_SCHEME ) );
+    }
+
+    /**
+     * Keep hatch links, form actions and redirects on the configured secure transport.
+     *
+     * @return string
+     */
+    private static function login_url() {
+        return site_url( 'wp-login.php', self::secure_transport() ? 'https' : 'login' );
     }
 
     /**
@@ -413,7 +460,7 @@ final class THRG_Bunker_Hatch {
         $body .= '<strong>' . esc_html__( 'IP address:', 'thrg-bunker' ) . '</strong> ' . esc_html( (string) $request['ip'] ) . '<br />';
         $body .= '<strong>' . esc_html__( 'Browser:', 'thrg-bunker' ) . '</strong> ' . esc_html( (string) $request['agent'] ) . '</p>';
         $body .= '<p>' . esc_html__( 'Approve only if this was you.', 'thrg-bunker' ) . '</p>';
-        $body .= '<form method="post" action="' . esc_url( add_query_arg( array( 'thrg_hatch_review' => $secret ), site_url( 'wp-login.php', 'login' ) ) ) . '">';
+        $body .= '<form method="post" action="' . esc_url( add_query_arg( array( 'thrg_hatch_review' => $secret ), self::login_url() ) ) . '">';
         $body .= '<button type="submit" name="decision" value="approve" class="go">' . esc_html__( 'Approve', 'thrg-bunker' ) . '</button> ';
         $body .= '<button type="submit" name="decision" value="deny">' . esc_html__( 'Deny', 'thrg-bunker' ) . '</button> ';
         $body .= '<button type="submit" name="decision" value="disable">' . esc_html__( 'Deny and turn the hatch off', 'thrg-bunker' ) . '</button>';
@@ -527,7 +574,7 @@ final class THRG_Bunker_Hatch {
     private static function send_mail( array $request, $secret ) {
         $site    = wp_specialchars_decode( (string) get_bloginfo( 'name' ) );
         $subject = THRG_Bunker_Mail::subject( __( 'Approve or deny a hatch request', 'thrg-bunker' ) );
-        $review  = add_query_arg( array( 'thrg_hatch_review' => $secret ), site_url( 'wp-login.php', 'login' ) );
+        $review  = add_query_arg( array( 'thrg_hatch_review' => $secret ), self::login_url() );
         $body    = sprintf(
             /* translators: %s: site name. */
             __( 'Someone opened the Bunker hatch link for %s and asked to reach the login page.', 'thrg-bunker' ),
@@ -579,18 +626,15 @@ final class THRG_Bunker_Hatch {
      * @return void
      */
     private static function cookie( $name, $value, $expires ) {
-        do_action( 'thrg_bunker_hatch_cookie', $name, $value, $expires );
-        setcookie(
-            $name,
-            $value,
-            array(
-                'expires'  => $expires,
-                'path'     => '/',
-                'secure'   => is_ssl(),
-                'httponly' => true,
-                'samesite' => 'Lax',
-            )
+        $options = array(
+            'expires'  => $expires,
+            'path'     => '/',
+            'secure'   => self::secure_transport(),
+            'httponly' => true,
+            'samesite' => 'Lax',
         );
+        do_action( 'thrg_bunker_hatch_cookie', $name, $value, $expires, $options );
+        setcookie( $name, $value, $options );
     }
 
     /**
@@ -599,7 +643,7 @@ final class THRG_Bunker_Hatch {
      * @return void
      */
     private static function go_login() {
-        wp_safe_redirect( site_url( 'wp-login.php', 'login' ) );
+        wp_safe_redirect( self::login_url() );
         exit;
     }
 
@@ -609,7 +653,7 @@ final class THRG_Bunker_Hatch {
      * @return void
      */
     private static function go_wait() {
-        wp_safe_redirect( add_query_arg( array( 'thrg_hatch_wait' => '1' ), site_url( 'wp-login.php', 'login' ) ) );
+        wp_safe_redirect( add_query_arg( array( 'thrg_hatch_wait' => '1' ), self::login_url() ) );
         exit;
     }
 

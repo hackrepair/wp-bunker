@@ -4,7 +4,7 @@ Tags: security, hardening, headless, static site, lockdown
 Requires at least: 6.9.4
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 1.2.13
+Stable tag: 1.2.14
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Support link: https://github.com/hackrepair/wp-bunker/discussions
@@ -82,6 +82,10 @@ In File Manager, rename the `thrg-bunker` plugin folder. That removes every PHP 
 
 It is a spare key. If your IP address changes and you cannot reach the login page, open your hatch link from the new address. Bunker emails the administrator, and the login page opens for that browser only after the email's Approve button is pressed. Opening the link from an address already on your list just takes you to the login page.
 
+= Should I use HTTPS for the hatch? =
+
+Yes. HTTP can expose approval links and browser cookies to interception. Configure HTTPS through your hosting provider. Bunker does not change your site URLs or hosting redirects. The hatch uses MySQL/MariaDB connection-owned advisory locks; database proxies must keep these queries on the same server/session. If that safety lock is unavailable, a new request is refused rather than processed without a lock.
+
 = What happens when I deactivate Bunker? =
 
 Everything is switched off and the hatch link stops working, but your settings are kept. After you activate it again, press On in the left column when you are ready.
@@ -99,6 +103,13 @@ Those use XML-RPC. Untick **Block XML-RPC** if you use either.
 PHP lockdowns work everywhere. Bunker shows manual equivalents for its file restrictions. Configure HTTPS redirects through your Nginx hosting controls.
 
 == Changelog ==
+
+= 1.2.14 =
+* Harden uploads rules against uppercase PHP suffixes and double extensions such as shell.php.jpg; update Nginx guidance too.
+* Replace the hatch shared-temp lock with a connection-owned database lock; fail closed if the safety lock is unavailable.
+* Keep hatch cookies and links on HTTPS when WordPress is configured for it, including HTTPS proxies.
+* Show an HTTP hatch advisory without changing site URLs, hosting settings or redirects.
+* Simplify the introductory heading while preserving the confirmation step.
 
 = 1.2.13 =
 * The Other THRG Plugins tab in View Details now also lists Stickies.

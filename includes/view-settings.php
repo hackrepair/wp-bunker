@@ -118,7 +118,7 @@ $thrg_rail_links      = array(
 
     <?php if ( ! $thrg_confirmed && ! is_multisite() ) : ?>
         <section class="bunker-confirm" aria-labelledby="bunker-confirm-title">
-            <h2 id="bunker-confirm-title"><?php esc_html_e( 'Bunker is for WordPress running behind a static website. Is that how this site works?', 'thrg-bunker' ); ?></h2>
+            <h2 id="bunker-confirm-title"><?php esc_html_e( 'Bunker is for WordPress running behind a static website.', 'thrg-bunker' ); ?></h2>
             <p><?php esc_html_e( 'Every lockdown below that is ticked turns on when you choose "Lock it down". Untick anything you want to keep open first. Nothing is enforced until you choose.', 'thrg-bunker' ); ?></p>
             <?php if ( ! empty( $thrg_state['declined'] ) ) : ?>
                 <p class="bunker-banner"><strong><?php esc_html_e( 'Bunker is installed but not protecting this site yet.', 'thrg-bunker' ); ?></strong></p>
@@ -265,6 +265,9 @@ $thrg_rail_links      = array(
             <h2 class="bunker-section"><?php esc_html_e( 'Hatch link (spare key)', 'thrg-bunker' ); ?></h2>
             <div class="bunker-panel">
                 <p><?php esc_html_e( 'If your IP address changes and you cannot reach the login page, the hatch link is a way back in. Opening it sends an approval email to the administrator. Nothing happens until someone presses Approve in that email, and then only the browser that asked is let through to the login page. You still need your password.', 'thrg-bunker' ); ?></p>
+                <?php if ( ! THRG_Bunker_Hatch::secure_transport() ) : ?>
+                    <p class="bunker-warning"><?php esc_html_e( 'HTTPS is strongly recommended for the hatch. On HTTP, approval links and browser cookies can be intercepted. Ask your hosting provider to configure HTTPS; Bunker does not change your site URLs or redirects.', 'thrg-bunker' ); ?></p>
+                <?php endif; ?>
                 <?php if ( '' !== $thrg_hatch_note ) : ?>
                     <p class="description"><?php echo esc_html( $thrg_hatch_note ); ?></p>
                 <?php endif; ?>

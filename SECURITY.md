@@ -38,7 +38,7 @@ Test only systems and accounts you own or are explicitly authorized to assess. P
 
 Bunker manages selected WordPress access gates and Apache/LiteSpeed rules for a utility installation behind a static site. It stores its configuration, hashed recovery-link material, temporary browser-approval state and email-throttle timestamps. Approval requests can contain a requesting IP address and user agent, which are included in the administrator approval email. The optional cron watcher and initial welcome also use WordPress mail. Update discovery contacts GitHub, and local health checks request the site's own URLs.
 
-Keep hosting access available when changing server rules. PHP cannot remove those rules when the plugin folder is renamed. HTTPS configuration belongs to hosting, and hatch creation locks assume one shared host filesystem. Multisite enforcement is disabled. The plugin complements authentication, patching and hosting controls.
+Keep hosting access available when changing server rules. PHP cannot remove those rules when the plugin folder is renamed. HTTPS configuration belongs to hosting, and hatch creation locks require MySQL/MariaDB advisory-lock queries on the same server/session. The lock fails closed if unavailable. HTTPS is strongly recommended for hatch approval links and cookies; keep query secrets out of logs and shared diagnostics. Multisite enforcement is disabled. The plugin complements authentication, patching and hosting controls.
 
 Security controls, automated checks and code reviews reduce risk; they are not a guarantee that the plugin or a WordPress site is free of vulnerabilities. Repository documentation describes intended behavior, not independent security certification.
 

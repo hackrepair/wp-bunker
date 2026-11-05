@@ -101,3 +101,15 @@ $broken = "# BEGIN THRG Bunker\nOptions -Indexes\n";
 check( 'ambiguous markers remain untouched', $broken === THRG_Bunker_Server_Rules::with_block( $broken, array( '# replacement' ) ) );
 check( 'case-distinct actions stay distinct', ! THRG_Bunker_Lockdown::action_allowed( 'SEND', 'send' ) );
 check( 'array actions are rejected', ! THRG_Bunker_Lockdown::action_allowed( array( 'send' ), 'send' ) );
+
+// Exercise the exact generated Apache expression, including extension components.
+preg_match( '/<FilesMatch "([^"]+)"/', $uploads_rules, $pattern );
+foreach ( array( 'shell.php', 'shell.php.jpg', 'shell.PHP.JPG', 'shell.phtml.png', 'shell.php83', 'shell.phar.gif', 'shell.pht', 'shell.phps' ) as $filename ) {
+    check( 'uploads deny ' . $filename, 1 === preg_match( '~' . $pattern[1] . '~', $filename ) );
+}
+foreach ( array( 'photo.jpg', 'document.pdf', 'myphp.jpg', 'shell.phpx.jpg', 'my.phtmlnotes.txt' ) as $filename ) {
+    check( 'uploads allow ' . $filename, 0 === preg_match( '~' . $pattern[1] . '~', $filename ) );
+}
+$nginx = THRG_Bunker_Server_Rules::nginx_text( 'uploads_php' );
+preg_match( '/location ~\* (.+) \{/', $nginx, $nginx_pattern );
+check( 'Nginx guidance also denies uppercase double extensions', 1 === preg_match( '~' . $nginx_pattern[1] . '~i', '/wp-content/uploads/shell.PHP.JPG' ) );

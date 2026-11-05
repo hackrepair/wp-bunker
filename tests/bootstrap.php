@@ -79,7 +79,32 @@ class WP_Error {
 function add_action( $h, $cb, $p = 10, $a = 1 ) { $GLOBALS['hooks'][ $h ][] = $cb; }
 function add_filter( $h, $cb, $p = 10, $a = 1 ) { $GLOBALS['hooks'][ $h ][] = $cb; }
 function apply_filters( $h, $v ) { return $v; }
-function is_ssl() { return true; }
+function is_ssl() { return $GLOBALS['test_ssl'] ?? true; }
+function force_ssl_admin() { return $GLOBALS['test_force_ssl'] ?? false; }
+function wp_cache_delete( $key, $group = '' ) { return true; }
+
+class THRG_Test_DB {
+    public $options = 'wp_options';
+    public $held = false;
+    public $fail = false;
+    public $releases = 0;
+    public function prepare( $sql, $name ) { return str_replace( '%s', "'" . $name . "'", $sql ); }
+    public function get_var( $sql ) {
+        if ( false !== strpos( $sql, 'GET_LOCK(' ) ) {
+            if ( $this->fail ) { return null; }
+            if ( $this->held ) { return '0'; }
+            $this->held = true;
+            return '1';
+        }
+        if ( false !== strpos( $sql, 'RELEASE_LOCK(' ) ) {
+            $this->held = false;
+            ++$this->releases;
+            return '1';
+        }
+        throw new RuntimeException( 'Unexpected SQL in test' );
+    }
+}
+$GLOBALS['wpdb'] = new THRG_Test_DB();
 function wp_hash( $d ) { return hash_hmac( 'sha256', $d, 'test-salt' ); }
 function wp_kses( $h, $a ) { return $h; }
 function sanitize_email( $e ) { return trim( strip_tags( (string) $e ) ); }
@@ -97,6 +122,7 @@ function do_action( $h ) {
     }
     if ( 'thrg_bunker_hatch_cookie' === $h ) {
         $GLOBALS['cookies'][ $args[0] ] = $args[1];
+        $GLOBALS['cookie_options'][ $args[0] ] = $args[3];
     }
 }
 function register_deactivation_hook( $f, $cb ) { $GLOBALS['hooks']['deactivate'][] = $cb; }
@@ -137,7 +163,7 @@ function delete_transient( $k ) { unset( $GLOBALS['transient'][ $k ] ); return t
 function wp_upload_dir( $t = null, $c = true ) { return array( 'basedir' => ABSPATH . 'wp-content/uploads', 'baseurl' => 'https://example.test/uploads' ); }
 function wp_parse_url( $u, $c = -1 ) { return parse_url( $u, $c ); }
 function home_url( $p = '' ) { return 'https://example.test' . $p; }
-function site_url( $p = '' ) { return 'https://example.test/' . ltrim( $p, '/' ); }
+function site_url( $p = '', $scheme = null ) { return ( 'http' === $scheme ? 'http' : 'https' ) . '://example.test/' . ltrim( $p, '/' ); }
 function wp_login_url() { return 'https://example.test/wp-login.php'; }
 function wp_remote_get( $u, $a = array() ) { if ( isset( $GLOBALS['http_callback'] ) ) { return $GLOBALS['http_callback']( $u, $a ); } return $GLOBALS['http'] instanceof WP_Error ? $GLOBALS['http'] : array( 'response' => array( 'code' => $GLOBALS['http'] ) ); }
 function wp_remote_retrieve_response_code( $r ) { return $r['response']['code']; }

@@ -101,3 +101,11 @@ file_put_contents( $backup_file, 'old rules' );
 $html = render_page();
 check( 'with a retained backup the section and the button appear in plain words', false !== strpos( $html, 'bunker-recovery' ) && false !== strpos( $html, 'Set the backup aside and allow a retry' ) && false !== strpos( $html, 'thrg_bunker_archive_backup' ) );
 @unlink( $backup_file );
+
+$GLOBALS['test_ssl'] = false;
+$GLOBALS['opts']['siteurl'] = 'http://example.test';
+$html = render_page();
+check( 'HTTP displays a nonblocking hatch transport advisory', false !== strpos( $html, 'HTTPS is strongly recommended for the hatch.' ) && false !== strpos( $html, 'Create hatch link' ) );
+$GLOBALS['opts']['siteurl'] = 'https://example.test';
+$html = render_page();
+check( 'configured HTTPS suppresses the HTTP advisory behind a proxy', false === strpos( $html, 'HTTPS is strongly recommended for the hatch.' ) );
